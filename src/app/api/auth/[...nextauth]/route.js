@@ -1,9 +1,9 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { compare } from 'bcryptjs';
 import { query } from '@/lib/db';
+import bcrypt from 'bcryptjs';
 
-const authOptions = {
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -11,37 +11,38 @@ const authOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
 
         try {
-          // 1. Cari pengguna di database berdasarkan email
           const userResult = await query('SELECT * FROM users WHERE email = $1', [credentials.email]);
           const user = userResult.rows[0];
 
           if (!user) {
-            // Pengguna tidak ditemukan
+            console.log("User not found for email:", credentials.email);
             return null;
           }
+          
+          // --- PERBAIKAN UTAMA DI SINI ---
+          // Kita harus 'await' hasil perbandingan password karena ini proses asynchronous
+          const isPasswordCorrect = await bcrypt.compare(credentials.password, user.password);
 
-          // 2. Bandingkan password yang diinput dengan hash di database
-          const passwordsMatch = await compare(credentials.password, user.password);
-
-          if (!passwordsMatch) {
-            // Password tidak cocok
+          if (!isPasswordCorrect) {
+            console.log("Password incorrect for user:", credentials.email);
             return null;
           }
-
-          // 3. Jika berhasil, kembalikan data pengguna (tanpa password)
-          // Data ini akan disimpan di dalam token sesi (JWT)
+          
+          // Jika user ditemukan dan password benar, kembalikan data user
+          // Jangan sertakan password dalam objek yang dikembalikan
           return {
             id: user.id,
-            email: user.email,
             name: user.name,
+            email: user.email,
             role: user.role,
           };
+
         } catch (error) {
           console.error("Authorize error:", error);
           return null;
@@ -49,11 +50,14 @@ const authOptions = {
       }
     })
   ],
+  pages: {
+    signIn: '/login',
+    error: '/login', // Arahkan ke login jika ada error
+  },
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
   },
   callbacks: {
-    // Callback ini digunakan untuk menambahkan data custom (seperti role & id) ke token sesi
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -61,7 +65,6 @@ const authOptions = {
       }
       return token;
     },
-    // Callback ini digunakan untuk membuat data sesi yang bisa diakses di sisi client
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id;
@@ -70,12 +73,10 @@ const authOptions = {
       return session;
     },
   },
-  pages: {
-    signIn: '/login', // Arahkan ke halaman login kustom kita jika pengguna belum terotentikasi
-  },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
+
