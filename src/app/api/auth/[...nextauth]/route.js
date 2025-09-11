@@ -11,38 +11,28 @@ export const authOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
 
         try {
-          const userResult = await query('SELECT * FROM users WHERE email = $1', [credentials.email]);
-          const user = userResult.rows[0];
+          const result = await query('SELECT * FROM users WHERE email = $1', [credentials.email]);
+          const user = result.rows[0];
 
-          if (!user) {
-            console.log("User not found for email:", credentials.email);
-            return null;
+          if (user) {
+            const isPasswordCorrect = await bcrypt.compare(credentials.password, user.password);
+            if (isPasswordCorrect) {
+              // Return user object yang akan digunakan di callbacks
+              return { 
+                id: user.id, 
+                email: user.email, 
+                name: user.name, 
+                role: user.role // Pastikan role dikirim
+              };
+            }
           }
-          
-          // --- PERBAIKAN UTAMA DI SINI ---
-          // Kita harus 'await' hasil perbandingan password karena ini proses asynchronous
-          const isPasswordCorrect = await bcrypt.compare(credentials.password, user.password);
-
-          if (!isPasswordCorrect) {
-            console.log("Password incorrect for user:", credentials.email);
-            return null;
-          }
-          
-          // Jika user ditemukan dan password benar, kembalikan data user
-          // Jangan sertakan password dalam objek yang dikembalikan
-          return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-          };
-
+          return null;
         } catch (error) {
           console.error("Authorize error:", error);
           return null;
@@ -50,14 +40,8 @@ export const authOptions = {
       }
     })
   ],
-  pages: {
-    signIn: '/login',
-    error: '/login', // Arahkan ke login jika ada error
-  },
-  session: {
-    strategy: 'jwt',
-  },
   callbacks: {
+    // Callback ini dipanggil setiap kali JWT dibuat atau diperbarui
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -65,6 +49,7 @@ export const authOptions = {
       }
       return token;
     },
+    // Callback ini dipanggil setiap kali sesi diakses
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id;
@@ -72,6 +57,13 @@ export const authOptions = {
       }
       return session;
     },
+  },
+  pages: {
+    signIn: '/login',
+    error: '/api/auth/error', // Halaman error (opsional, tapi bagus untuk debug)
+  },
+  session: {
+    strategy: 'jwt',
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

@@ -1,22 +1,9 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Car, Building, Plane, LogOut } from 'lucide-react';
+import { Home, ParkingCircle, User, Shield, Search } from 'lucide-react';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import SignOutButton from './_components/SignOutButton';
-
-// Komponen untuk setiap item di sidebar
-function SidebarNavItem({ href, icon: Icon, children }) {
-  return (
-    <Link href={href}>
-      <span className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-150">
-        <Icon className="h-5 w-5" />
-        <span>{children}</span>
-      </span>
-    </Link>
-  );
-}
-
 
 export default async function DashboardLayout({ children }) {
   const session = await getServerSession(authOptions);
@@ -25,44 +12,62 @@ export default async function DashboardLayout({ children }) {
     redirect('/login');
   }
 
+  const isAdmin = session.user?.role?.toLowerCase() === 'admin';
+
   return (
-    <div className="flex h-screen bg-gray-100 font-sans">
+    <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900 font-sans">
       {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0 bg-gray-800 text-white flex flex-col p-4">
-        <div className="flex items-center space-x-2 px-2 mb-8">
-          <Car className="h-8 w-8 text-blue-400" />
-          <h1 className="text-2xl font-bold">Park<span className="text-blue-400">Wise</span></h1>
+      <aside className="w-64 flex-shrink-0 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col">
+        <div className="h-16 flex items-center justify-center border-b dark:border-gray-700">
+          <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-white">
+            <ParkingCircle className="text-blue-500" />
+            <span>Parkirin</span>
+          </Link>
         </div>
-
-        <nav className="flex-grow space-y-2">
-          <SidebarNavItem href="/dashboard" icon={LayoutDashboard}>
-            Dashboard
-          </SidebarNavItem>
-          <SidebarNavItem href="/dashboard/mall" icon={Building}>
-            Pilih Mall
-          </SidebarNavItem>
-          <SidebarNavItem href="/dashboard/airport" icon={Plane}>
-            Pilih Bandara
-          </SidebarNavItem>
+        <nav className="flex-1 px-4 py-6 space-y-2">
+          <Link href="/dashboard" className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            <Home className="w-5 h-5 mr-3" />
+            <span>Dashboard</span>
+          </Link>
+          {/* == LINK BARU DI SINI == */}
+          <Link href="/dashboard/locations" className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            <Search className="w-5 h-5 mr-3" />
+            <span>Cari Lokasi</span>
+          </Link>
+          <Link href="/dashboard/bookings" className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            <ParkingCircle className="w-5 h-5 mr-3" />
+            <span>My Bookings</span>
+          </Link>
+          <Link href="/dashboard/profile" className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            <User className="w-5 h-5 mr-3" />
+            <span>Profile</span>
+          </Link>
+          {isAdmin && (
+            <Link href="/dashboard/admin" className="flex items-center px-4 py-2 text-green-600 dark:text-green-400 rounded-md hover:bg-green-100 dark:hover:bg-gray-700 transition-colors font-semibold">
+              <Shield className="w-5 h-5 mr-3" />
+              <span>Admin Panel</span>
+            </Link>
+          )}
         </nav>
-
-        <div className="mt-auto">
-           {/* Tombol Logout diletakkan di sini */}
-           <SignOutButton />
+        <div className="px-4 py-6 border-t dark:border-gray-700">
+          <SignOutButton />
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white shadow-sm p-4">
-            <div className="flex justify-end items-center">
-                <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-800">{session.user.name}</p>
-                    <p className="text-xs text-gray-500">{session.user.email}</p>
-                </div>
+      <div className="flex-1 flex flex-col">
+        <header className="h-16 bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex items-center justify-end px-6">
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="font-semibold text-sm text-gray-800 dark:text-white">{session.user.name}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{session.user.email}</p>
             </div>
+            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+              <User className="w-6 h-6 text-gray-500" />
+            </div>
+          </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">
+        <main className="flex-1 p-6 lg:p-8">
           {children}
         </main>
       </div>
