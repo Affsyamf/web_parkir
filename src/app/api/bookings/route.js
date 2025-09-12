@@ -13,15 +13,17 @@ export async function GET(request) {
   try {
     const userId = session.user.id;
     
-    // Query ini mengambil data booking dan menggabungkannya dengan nama lokasi dan kode slot
+    // --- PERBAIKAN DI SINI ---
+    // Menghapus join ke tabel parking_spots yang sudah tidak ada
+    // dan mengambil spot_code langsung dari tabel parking_slots
     const result = await query(
       `SELECT 
         b.id, b.status, b.entry_time, b.estimated_exit_time, b.total_price,
         l.name as location_name,
-        p.spot_code
+        ps.spot_code
        FROM bookings b
        LEFT JOIN locations l ON b.location_id = l.id
-       LEFT JOIN parking_spots p ON b.spot_id = p.id
+       LEFT JOIN parking_slots ps ON b.spot_id = ps.id
        WHERE b.user_id = $1
        ORDER BY b.entry_time DESC`,
       [userId]
