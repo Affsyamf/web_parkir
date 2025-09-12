@@ -13,8 +13,6 @@ export async function GET(request) {
   try {
     const userId = session.user.id;
     
-    // --- PERBAIKAN DI SINI ---
-    // Menghapus join ke tabel parking_spots yang sudah tidak ada
     // dan mengambil spot_code langsung dari tabel parking_slots
     const result = await query(
       `SELECT 
