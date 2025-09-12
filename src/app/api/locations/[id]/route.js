@@ -3,6 +3,30 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
+
+// Handler untuk GET (Mengambil detail satu lokasi)
+export async function GET(request, { params }) {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 });
+    }
+  
+    try {
+      const { id } = params;
+      const result = await query('SELECT * FROM locations WHERE id = $1', [id]);
+  
+      if (result.rowCount === 0) {
+        return NextResponse.json({ error: 'Lokasi tidak ditemukan.' }, { status: 404 });
+      }
+  
+      return NextResponse.json({ location: result.rows[0] }, { status: 200 });
+    } catch (error) {
+      console.error('API GET location by ID error:', error);
+      return NextResponse.json({ error: 'Gagal mengambil detail lokasi.' }, { status: 500 });
+    }
+}
+
+
 // Handler untuk PUT (Update/Edit lokasi)
 export async function PUT(request, { params }) {
   const session = await getServerSession(authOptions);
