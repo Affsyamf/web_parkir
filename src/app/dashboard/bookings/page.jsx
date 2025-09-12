@@ -190,24 +190,46 @@ const BookingCard = ({ booking, onCheckout }) => {
 // }
 
 export default function MyBookingsPage() {
-    const [bookings, setBookings] = useState([]);
+   const [activeBookings, setActiveBookings] = useState([]);
+    const [pastBookings, setPastBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
 
-    const fetchBookings = async () => {
-        // ... (Fungsi fetchBookings tidak berubah)
-        setLoading(true);
-        try {
-            const response = await fetch('/api/bookings');
+        // State baru untuk pagination
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+
+    const fetchBookings = async (currentPage = 1) => {
+        if (currentPage === 1) setLoading(true);
+        else setLoadingMore(true);
+       try {
+            const response = await fetch(`/api/bookings?page=${currentPage}`);
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || "Gagal memuat riwayat booking.");
+                throw new Error(errorData.error || "Gagal memuat data booking.");
             }
             const data = await response.json();
-            setBookings(data.bookings || []);
-        } catch (err) {
+            
+            if (currentPage === 1) {
+                setActiveBookings(data.activeBookings || []);
+                setPastBookings(data.pastBookings || []);
+            } else {
+                // Tambahkan data baru ke data yang sudah ada
+                setPastBookings(prev => [...prev, ...(data.pastBookings || [])]);
+            }
+
+             // Cek apakah masih ada data untuk dimuat
+            const totalLoaded = currentPage === 1 
+                ? (data.pastBookings || []).length 
+                : pastBookings.length + (data.pastBookings || []).length;
+
+            setHasMore(totalLoaded < data.totalPastBookings);
+
+             } catch (err) {
             toast.error(err.message);
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
@@ -218,27 +240,30 @@ export default function MyBookingsPage() {
 
     // --- FUNGSI BARU UNTUK MENGHUBUNGKAN TOMBOL KE API ---
     const handleCheckout = async (bookingId) => {
-        try {
-            const response = await fetch(`/api/bookings/${bookingId}`, {
-                method: 'PUT'
-            });
+       try {
+            const response = await fetch(`/api/bookings/${bookingId}`, { method: 'PUT' });
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || "Gagal melakukan checkout.");
             }
             toast.success('Parkir berhasil diselesaikan!');
-            await fetchBookings(); // Muat ulang data untuk memperbarui tampilan
+            await fetchBookings(1); // Muat ulang semua data dari awal
         } catch (err) {
             toast.error(err.message);
         }
     };
 
-    const activeBookings = bookings.filter(b => b.status === 'active');
-    const pastBookings = bookings.filter(b => b.status !== 'active');
+    const handleLoadMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchBookings(nextPage);
+    };
 
     if (loading) {
         return <div className="flex justify-center items-center h-full"><Loader2 className="w-12 h-12 animate-spin text-blue-500" /></div>;
     }
+
+   
 
     return (
         <div className="max-w-7xl mx-auto space-y-12">
@@ -271,6 +296,24 @@ export default function MyBookingsPage() {
                         </div>
                     )}
                 </div>
+
+
+                {hasMore && (
+                    <div className="mt-8 text-center">
+                        <button 
+                            onClick={handleLoadMore} 
+                            disabled={loadingMore}
+                            className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                        >
+                            {loadingMore ? (
+                                <span className="flex items-center"><Loader2 className="animate-spin mr-2"/> Memuat...</span>
+                            ) : (
+                                'Muat Lebih Banyak'
+                            )}
+                        </button>
+                    </div>
+                )}
+
              </div>
         </div>
     );

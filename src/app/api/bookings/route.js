@@ -13,21 +13,47 @@ export async function GET(request) {
   try {
     const userId = session.user.id;
     
-    // dan mengambil spot_code langsung dari tabel parking_slots
-    const result = await query(
-      `SELECT 
-        b.id, b.status, b.entry_time, b.estimated_exit_time, b.total_price,
-        l.name as location_name,
-        ps.spot_code
+     // --- PERUBAHAN UNTUK PAGINATION ---
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = 5; // Kita akan menampilkan 5 riwayat booking per halaman
+    const offset = (page - 1) * limit;
+
+    // 1. Ambil SEMUA booking yang aktif (biasanya tidak banyak)
+    const activeBookingsResult = await query(
+      `SELECT b.id, b.status, b.entry_time, b.estimated_exit_time, b.total_price, l.name as location_name, ps.spot_code
        FROM bookings b
        LEFT JOIN locations l ON b.location_id = l.id
        LEFT JOIN parking_slots ps ON b.spot_id = ps.id
-       WHERE b.user_id = $1
+       WHERE b.user_id = $1 AND b.status = 'active'
        ORDER BY b.entry_time DESC`,
       [userId]
     );
 
-    return NextResponse.json({ bookings: result.rows }, { status: 200 });
+     // 2. Ambil RIWAYAT booking (yang sudah tidak aktif) secara bertahap (paginated)
+    const pastBookingsResult = await query(
+      `SELECT b.id, b.status, b.entry_time, b.estimated_exit_time, b.total_price, l.name as location_name, ps.spot_code
+       FROM bookings b
+       LEFT JOIN locations l ON b.location_id = l.id
+       LEFT JOIN parking_slots ps ON b.spot_id = ps.id
+       WHERE b.user_id = $1 AND b.status != 'active'
+       ORDER BY b.entry_time DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+    
+     // 3. Hitung TOTAL riwayat booking untuk tahu kapan harus berhenti menampilkan tombol "Load More"
+    const totalPastBookingsResult = await query(
+      "SELECT COUNT(*) FROM bookings WHERE user_id = $1 AND status != 'active'",
+      [userId]
+    );
+
+
+    return NextResponse.json({ 
+      activeBookings: activeBookingsResult.rows,
+      pastBookings: pastBookingsResult.rows,
+      totalPastBookings: parseInt(totalPastBookingsResult.rows[0].count, 10)
+    }, { status: 200 });
   } catch (error) {
     console.error('API GET bookings error:', error);
     return NextResponse.json({ error: 'Gagal mengambil riwayat booking.' }, { status: 500 });
