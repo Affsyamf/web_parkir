@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Home, ParkingCircle, User, Shield, Search } from 'lucide-react';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import SignOutButton from './_components/SignOutButton';
+import { Toaster } from 'react-hot-toast';
 
 export default async function DashboardLayout({ children }) {
   const session = await getServerSession(authOptions);
@@ -29,8 +30,7 @@ export default async function DashboardLayout({ children }) {
             <Home className="w-5 h-5 mr-3" />
             <span>Dashboard</span>
           </Link>
-          {/* == LINK BARU DI SINI == */}
-          <Link href="/dashboard/locations" className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+           <Link href="/dashboard/locations" className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
             <Search className="w-5 h-5 mr-3" />
             <span>Cari Lokasi</span>
           </Link>
@@ -68,6 +68,17 @@ export default async function DashboardLayout({ children }) {
           </div>
         </header>
         <main className="flex-1 p-6 lg:p-8">
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              className: '',
+              style: {
+                border: '1px solid #713200',
+                padding: '16px',
+                color: '#713200',
+              },
+            }}
+          />
           {children}
         </main>
       </div>
