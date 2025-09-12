@@ -37,7 +37,12 @@ export async function PUT(request, { params }) {
 
     // 2. Hitung ulang total biaya berdasarkan durasi parkir aktual
     const durationInMillis = actualExitTime - entryTime;
-    const durationInHours = Math.ceil(durationInMillis / (1000 * 60 * 60));
+    let durationInHours = Math.ceil(durationInMillis / (1000 * 60 * 60));
+    // Minimal durasi adalah 1 jam
+    if (durationInHours < 1) {
+        durationInHours = 1;
+    }
+
     const pricePerHour = 10000;
     const finalPrice = durationInHours * pricePerHour;
 
@@ -65,3 +70,4 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ error: 'Gagal menyelesaikan booking.' }, { status: 500 });
   }
 }
+

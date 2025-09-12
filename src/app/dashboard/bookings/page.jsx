@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, Calendar, DollarSign, MapPin, Car, Loader2, ServerCrash } from 'lucide-react';
+import { Clock, Calendar, DollarSign, MapPin, Car, Loader2, ServerCrash, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
-const BookingCard = ({ booking }) => {
+const BookingCard = ({ booking, onCheckout }) => {
     const statusStyles = {
         active: {
             bg: 'bg-blue-100 dark:bg-blue-900/50',
@@ -38,6 +38,74 @@ const BookingCard = ({ booking }) => {
         });
     };
     
+
+    // --- State & Logika Baru untuk Timer & Notifikasi ---
+    const [timeLeft, setTimeLeft] = useState('');
+    const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+    useEffect(() => {
+        if (booking.status !== 'active') return;
+
+        const interval = setInterval(() => {
+            const now = new Date();
+            const endTime = new Date(booking.estimated_exit_time);
+            const diff = endTime - now;
+
+            if (diff <= 0) {
+                setTimeLeft('Waktu habis!');
+            } else {
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                setTimeLeft(`${hours}j ${minutes}m ${seconds}d`);
+
+
+                 // Tampilkan notifikasi jika waktu kurang dari 15 menit
+                if (diff > 0 && diff < 15 * 60 * 1000 && !toast.custom) {
+                    toast.custom((t) => (
+                        <div
+                          className={`${
+                            t.visible ? 'animate-enter' : 'animate-leave'
+                          } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+                        >
+                          <div className="flex-1 w-0 p-4">
+                            <div className="flex items-start">
+                              <div className="flex-shrink-0 pt-0.5">
+                                <Clock className="h-10 w-10 text-orange-500"/>
+                              </div>
+                              <div className="ml-3 flex-1">
+                                <p className="text-sm font-medium text-gray-900">
+                                  Waktu Parkir Hampir Habis!
+                                </p>
+                                <p className="mt-1 text-sm text-gray-500">
+                                  Sisa waktu untuk Slot {booking.spot_code} kurang dari 15 menit.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex border-l border-gray-200">
+                            <button
+                              onClick={() => toast.dismiss(t.id)}
+                              className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                              Tutup
+                            </button>
+                          </div>
+                        </div>
+                      ), { id: `reminder-${booking.id}`, duration: 60000 }); // durasi notif 1 menit
+                }
+            }
+        }, 1000);
+
+         return () => clearInterval(interval);
+    }, [booking]);
+
+    const handleCheckout = async () => {
+        setIsCheckingOut(true);
+        await onCheckout(booking.id);
+        setIsCheckingOut(false);
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -77,42 +145,93 @@ const BookingCard = ({ booking }) => {
                     </div>
                 </div>
             </div>
-            {booking.total_price && (
-                <div className={`p-3 ${currentStatus.bg} flex justify-end items-center gap-2 border-t border-gray-200 dark:border-gray-700`}>
-                     <DollarSign size={16} className={currentStatus.text} />
-                     <span className={`font-bold text-lg ${currentStatus.text}`}>
-                        Rp {Number(booking.total_price).toLocaleString('id-ID')}
-                     </span>
-                </div>
-            )}
+
+
+            {/* --- Perubahan di bagian bawah kartu --- */}
+            <div className={`p-3 ${currentStatus.bg} flex justify-between items-center gap-2 border-t border-gray-200 dark:border-gray-700`}>
+                {booking.status === 'active' ? (
+                    <>
+                        <div className='text-center'>
+                           <p className='text-xs font-bold text-orange-500'>Sisa Waktu</p>
+                           <p className='font-mono font-bold text-orange-600 dark:text-orange-400'>{timeLeft}</p>
+                        </div>
+                        <button 
+                            onClick={handleCheckout} 
+                            disabled={isCheckingOut}
+                            className="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 transition-colors flex items-center gap-2 disabled:bg-green-400"
+                        >
+                            {isCheckingOut ? <Loader2 className="animate-spin" size={18} /> : <LogOut size={18} />}
+                            {isCheckingOut ? 'Loading...' : 'Selesaikan Parkir'}
+                        </button>
+                    </>
+                ) : (
+                    <div className="flex justify-end items-center gap-2 w-full">
+                         <DollarSign size={16} className={currentStatus.text} />
+                         <span className={`font-bold text-lg ${currentStatus.text}`}>
+                            Rp {Number(booking.total_price).toLocaleString('id-ID')}
+                         </span>
+                    </div>
+                )}
+            </div>
         </motion.div>
     )
 }
+
+//             {booking.total_price && (
+//                 <div className={`p-3 ${currentStatus.bg} flex justify-end items-center gap-2 border-t border-gray-200 dark:border-gray-700`}>
+//                      <DollarSign size={16} className={currentStatus.text} />
+//                      <span className={`font-bold text-lg ${currentStatus.text}`}>
+//                         Rp {Number(booking.total_price).toLocaleString('id-ID')}
+//                      </span>
+//                 </div>
+//             )}
+//         </motion.div>
+//     )
+// }
 
 export default function MyBookingsPage() {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchBookings = async () => {
-            setLoading(true);
-            try {
-                const response = await fetch('/api/bookings');
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || "Gagal memuat riwayat booking.");
-                }
-                const data = await response.json();
-                setBookings(data.bookings || []);
-            } catch (err) {
-                toast.error(err.message);
-            } finally {
-                setLoading(false);
+    const fetchBookings = async () => {
+        // ... (Fungsi fetchBookings tidak berubah)
+        setLoading(true);
+        try {
+            const response = await fetch('/api/bookings');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Gagal memuat riwayat booking.");
             }
-        };
+            const data = await response.json();
+            setBookings(data.bookings || []);
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+        useEffect(() => {
         fetchBookings();
     }, []);
+
+
+    // --- FUNGSI BARU UNTUK MENGHUBUNGKAN TOMBOL KE API ---
+    const handleCheckout = async (bookingId) => {
+        try {
+            const response = await fetch(`/api/bookings/${bookingId}`, {
+                method: 'PUT'
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Gagal melakukan checkout.");
+            }
+            toast.success('Parkir berhasil diselesaikan!');
+            await fetchBookings(); // Muat ulang data untuk memperbarui tampilan
+        } catch (err) {
+            toast.error(err.message);
+        }
+    };
 
     const activeBookings = bookings.filter(b => b.status === 'active');
     const pastBookings = bookings.filter(b => b.status !== 'active');
@@ -128,7 +247,7 @@ export default function MyBookingsPage() {
                 <p className="text-gray-500 dark:text-gray-400">Parkir yang sedang berjalan saat ini.</p>
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {activeBookings.length > 0 ? (
-                        activeBookings.map(booking => <BookingCard key={booking.id} booking={booking} />)
+                        activeBookings.map(booking => <BookingCard key={booking.id} booking={booking} onCheckout={handleCheckout} />)
                     ) : (
                         <div className="col-span-full text-center py-16 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                            <Car className="mx-auto w-12 h-12 text-gray-400 mb-4"/>
