@@ -18,7 +18,8 @@ export async function GET(request) {
       totalRevenueResult,
       totalBookingsResult,
       bookingsByDayResult,
-      bookingsByLocationResult
+      bookingsByLocationResult,
+      activeBookingsCountResult
     ] = await Promise.all([
       // 1. Menghitung total pendapatan dari booking yang selesai
       query("SELECT SUM(total_price) as total FROM bookings WHERE status = 'completed'"),
@@ -42,7 +43,8 @@ export async function GET(request) {
         JOIN locations l ON b.location_id = l.id 
         GROUP BY l.name 
         ORDER BY count DESC;
-      `)
+      `),
+       query("SELECT COUNT(*) as total FROM bookings WHERE status = 'active'")
     ]);
 
     // Format hasil query agar mudah digunakan di frontend
@@ -58,7 +60,8 @@ export async function GET(request) {
       bookingsByLocation: bookingsByLocationResult.rows.map(row => ({
         name: row.name,
         Jumlah: Number(row.count)
-      }))
+      })),
+       activeBookingsCount: activeBookingsCountResult.rows[0]?.total || 0,
     };
 
     return NextResponse.json(analyticsData, { status: 200 });

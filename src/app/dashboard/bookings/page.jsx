@@ -177,17 +177,6 @@ const BookingCard = ({ booking, onCheckout }) => {
     )
 }
 
-//             {booking.total_price && (
-//                 <div className={`p-3 ${currentStatus.bg} flex justify-end items-center gap-2 border-t border-gray-200 dark:border-gray-700`}>
-//                      <DollarSign size={16} className={currentStatus.text} />
-//                      <span className={`font-bold text-lg ${currentStatus.text}`}>
-//                         Rp {Number(booking.total_price).toLocaleString('id-ID')}
-//                      </span>
-//                 </div>
-//             )}
-//         </motion.div>
-//     )
-// }
 
 export default function MyBookingsPage() {
    const [activeBookings, setActiveBookings] = useState([]);
