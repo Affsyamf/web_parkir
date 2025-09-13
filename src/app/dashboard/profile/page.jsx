@@ -26,7 +26,7 @@ export default function ProfilePage() {
     const [isUpdatingName, setIsUpdatingName] = useState(false);
     const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-    // State untuk statistik pengguna
+    // --- KOMENTAR: State baru untuk statistik pengguna ---
     const [userStats, setUserStats] = useState({ totalBookings: 0, totalSpent: 0 });
     const [isLoadingStats, setIsLoadingStats] = useState(true);
 
@@ -35,27 +35,31 @@ export default function ProfilePage() {
             setName(session.user.name);
         }
         
-        // Ambil statistik booking pengguna
+        // --- KOMENTAR: Fungsi baru untuk mengambil dan menghitung statistik booking ---
         const fetchUserStats = async () => {
             setIsLoadingStats(true);
             try {
-                const response = await fetch('/api/bookings');
-                if (!response.ok) return;
+                // --- PERBAIKAN: Memanggil API baru yang lebih efisien ---
+                const response = await fetch('/api/profile/stats');
+                if (!response.ok) {
+                    toast.error("Gagal memuat statistik booking.");
+                    return;
+                };
                 const data = await response.json();
-                const completedBookings = data.bookings?.filter(b => b.status === 'completed') || [];
-                const totalSpent = completedBookings.reduce((sum, b) => sum + Number(b.total_price), 0);
+                
                 setUserStats({
-                    totalBookings: data.bookings?.length || 0,
-                    totalSpent: totalSpent
+                    totalBookings: data.totalBookings || 0,
+                    totalSpent: data.totalSpent || 0
                 });
             } catch (err) {
-                // Tidak perlu menampilkan error jika gagal memuat statistik
-                console.error("Failed to fetch user stats:", err);
+                toast.error("Gagal memuat statistik, terjadi kesalahan.");
+                console.error("Error fetching user stats:", err);
             } finally {
                 setIsLoadingStats(false);
             }
         };
 
+        // Hanya panggil API jika pengguna sudah terautentikasi
         if (status === 'authenticated') {
             fetchUserStats();
         }
@@ -90,8 +94,10 @@ export default function ProfilePage() {
             toast.error('Password baru tidak cocok!');
             return;
         }
-        if (newPassword.length < 1) {
-            toast.error('Password minimal harus 6 karakter.');
+
+        // Aturan diubah menjadi 1-6 karakter.
+        if (newPassword.length < 1 || newPassword.length > 6) {
+            toast.error('Password harus berisi antara 1 hingga 6 karakter.');
             return;
         }
 
@@ -127,6 +133,7 @@ export default function ProfilePage() {
                 <p className="text-gray-500 dark:text-gray-400 mt-1">Kelola informasi akun dan preferensi Anda.</p>
             </div>
 
+            {/* --- KOMENTAR: Kartu statistik sekarang menampilkan data dari state --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <StatCard 
                     title="Total Booking" 
@@ -182,3 +189,4 @@ export default function ProfilePage() {
         </motion.div>
     );
 }
+
