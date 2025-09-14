@@ -1,23 +1,29 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowRight, Search, MapPin, Car, ParkingCircle, CheckCircle, Smartphone, ShieldCheck, Zap, Users, Star } from 'lucide-react';
+import { ArrowRight, Search, MapPin, ParkingCircle, CheckCircle, Smartphone, ShieldCheck, Zap, Users, Star } from 'lucide-react';
 import Link from 'next/link';
+// Impor dari lokasi baru yang benar
+import { ThemeToggleButton } from '../components/ThemeToggleButton';
 
 // Komponen Header
 const Header = () => (
   <motion.header 
-    className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-sm border-b border-gray-200"
+    // PERUBAHAN: Menambahkan warna background dan border untuk dark mode
+    className="sticky top-0 z-50 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700"
     initial={{ y: -100 }}
     animate={{ y: 0 }}
     transition={{ duration: 0.5 }}
   >
     <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-      <div className="text-2xl font-bold text-gray-900">
-        Park<span className="text-blue-600">Wise</span>
+      {/* PERUBAHAN: Menambahkan warna teks untuk dark mode */}
+      <div className="text-2xl font-bold text-gray-900 dark:text-gray-50">
+       <a href="/">Park <span className="text-blue-600 dark:text-blue-500">Wise</span></a>
       </div>
       <div className="flex items-center gap-4">
-        <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+        <ThemeToggleButton />
+        {/* PERUBAHAN: Menambahkan warna teks untuk dark mode */}
+        <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors">
           Login
         </Link>
         <Link href="/register" className="flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow-md">
@@ -30,23 +36,28 @@ const Header = () => (
 
 // Komponen Hero Section
 const HeroSection = () => (
-  <section className="relative py-20 md:py-32 overflow-hidden">
-    <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 opacity-70"></div>
+  // PERUBAHAN: Menambahkan background untuk dark mode
+  <section className="relative py-20 md:py-32 overflow-hidden bg-white dark:bg-gray-900">
+    {/* PERUBAHAN: Mengganti background gradien untuk dark mode */}
+    <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800/50 dark:to-gray-900/50 opacity-70"></div>
     <div className="container mx-auto px-6 text-center relative z-10">
       <motion.h1 
-        className="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight"
+        // PERUBAHAN: Menambahkan warna teks untuk dark mode
+        className="text-4xl md:text-6xl font-extrabold text-gray-900 dark:text-gray-50 leading-tight"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+        {/* PERUBAHAN: Mengubah warna gradien teks untuk dark mode */}
+        <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
           Parkir Cerdas,
         </span>
         <br />
         Perjalanan Lancar.
       </motion.h1>
       <motion.p 
-        className="mt-6 max-w-2xl mx-auto text-lg text-gray-600"
+        // PERUBAHAN: Menambahkan warna teks untuk dark mode
+        className="mt-6 max-w-2xl mx-auto text-lg text-gray-600 dark:text-gray-300"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
@@ -70,27 +81,32 @@ const HeroSection = () => (
 // Komponen Kartu Fitur
 const FeatureCard = ({ icon: Icon, title, children, delay }) => (
   <motion.div 
-    className="p-6 bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 border border-gray-100"
+    // PERUBAHAN: Menambahkan warna background, border, dan shadow untuk dark mode
+    className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl dark:shadow-none transition-shadow duration-300 border border-gray-100 dark:border-gray-700"
     initial={{ opacity: 0, y: 30 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     transition={{ duration: 0.5, delay }}
   >
-    <div className="flex items-center justify-center w-12 h-12 bg-blue-100 text-blue-600 rounded-lg mb-4">
+    {/* PERUBAHAN: Menambahkan warna background dan teks untuk dark mode */}
+    <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg mb-4">
       <Icon className="w-6 h-6" />
     </div>
-    <h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
-    <p className="text-gray-600">{children}</p>
+    {/* PERUBAHAN: Menambahkan warna teks untuk dark mode */}
+    <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h3>
+    <p className="text-gray-600 dark:text-gray-300">{children}</p>
   </motion.div>
 );
 
 // Komponen Seksi Fitur
 const FeaturesSection = () => (
-  <section className="py-20 bg-gray-50">
+  // PERUBAHAN: Menambahkan warna background untuk dark mode
+  <section className="py-20 bg-gray-50 dark:bg-gray-800/50">
     <div className="container mx-auto px-6">
       <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Kenapa Memilih ParkWise?</h2>
-        <p className="mt-4 max-w-2xl mx-auto text-gray-600">
+        {/* PERUBAHAN: Menambahkan warna teks untuk dark mode */}
+        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-50">Kenapa Memilih ParkWise?</h2>
+        <p className="mt-4 max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
           Kami menyediakan solusi parkir modern yang dirancang untuk kenyamanan Anda.
         </p>
       </div>
@@ -123,25 +139,29 @@ const FeaturesSection = () => (
 const HowItWorksStep = ({ icon: Icon, step, title, children, isLast = false }) => (
   <div className="relative flex items-start">
     <div className="flex flex-col items-center mr-6">
-      <div className="flex items-center justify-center w-16 h-16 bg-white text-blue-600 rounded-full border-2 border-blue-200 shadow-md">
+      {/* PERUBAHAN: Menambahkan warna untuk dark mode */}
+      <div className="flex items-center justify-center w-16 h-16 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-full border-2 border-blue-200 dark:border-blue-500/50 shadow-md">
         <Icon className="w-8 h-8" />
       </div>
-      {!isLast && <div className="w-px h-24 bg-blue-200 mt-4"></div>}
+      {!isLast && <div className="w-px h-24 bg-blue-200 dark:bg-blue-800 mt-4"></div>}
     </div>
     <div>
-      <h3 className="text-xl font-semibold text-gray-800 mb-1">Langkah {step}: {title}</h3>
-      <p className="text-gray-600">{children}</p>
+      {/* PERUBAHAN: Menambahkan warna teks untuk dark mode */}
+      <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-1">Langkah {step}: {title}</h3>
+      <p className="text-gray-600 dark:text-gray-300">{children}</p>
     </div>
   </div>
 );
 
 // Komponen Seksi Cara Kerja
 const HowItWorksSection = () => (
-  <section className="py-20">
+  // PERUBAHAN: Menambahkan warna background untuk dark mode
+  <section className="py-20 bg-white dark:bg-gray-900">
     <div className="container mx-auto px-6">
       <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Hanya 3 Langkah Mudah</h2>
-        <p className="mt-4 max-w-2xl mx-auto text-gray-600">
+        {/* PERUBAHAN: Menambahkan warna teks untuk dark mode */}
+        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-50">Hanya 3 Langkah Mudah</h2>
+        <p className="mt-4 max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
           Mulai gunakan ParkWise dengan proses yang cepat dan intuitif.
         </p>
       </div>
@@ -158,7 +178,7 @@ const HowItWorksSection = () => (
         <HowItWorksStep icon={MapPin} step={2} title="Pesan & Bayar">
           Pilih slot yang Anda inginkan, tentukan durasi, dan selesaikan pembayaran dengan aman.
         </HowItWorksStep>
-        <HowItWorksStep icon={ParkingCircle} step={3} title="Parkir & Nikmati" isLast={true}>
+        <HowItWorksStep icon={ParkingCircle} step={3} title="Parkir & Nikmati">
           Tiba di lokasi, tunjukkan bukti booking Anda, dan nikmati waktu Anda tanpa khawatir.
         </HowItWorksStep>
       </motion.div>
@@ -168,10 +188,11 @@ const HowItWorksSection = () => (
 
 // Komponen Call to Action
 const CTASection = () => (
-  <section className="bg-blue-600">
+  // PERUBAHAN: Sedikit penyesuaian warna untuk dark mode
+  <section className="bg-blue-600 dark:bg-blue-700">
     <div className="container mx-auto px-6 py-16 text-center">
       <h2 className="text-3xl font-bold text-white">Siap Mengubah Cara Anda Parkir?</h2>
-      <p className="mt-4 text-blue-100 max-w-xl mx-auto">
+      <p className="mt-4 text-blue-100 dark:text-blue-200 max-w-xl mx-auto">
         Bergabunglah dengan ribuan pengguna dan mitra yang telah merasakan kemudahan bersama ParkWise. Daftar sekarang dan dapatkan diskon pada booking pertama Anda!
       </p>
       <motion.div 
@@ -189,7 +210,8 @@ const CTASection = () => (
 
 // Komponen Footer
 const Footer = () => (
-  <footer className="bg-gray-900 text-gray-400">
+  // PERUBAHAN: Menyesuaikan warna untuk dark mode
+  <footer className="bg-gray-900 dark:bg-black text-gray-400">
     <div className="container mx-auto px-6 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center">
         <div className="text-center md:text-left mb-4 md:mb-0">
@@ -202,7 +224,7 @@ const Footer = () => (
           <Link href="#" className="hover:text-white transition-colors">Kebijakan Privasi</Link>
         </div>
       </div>
-      <div className="mt-8 pt-6 border-t border-gray-800 text-center text-sm">
+      <div className="mt-8 pt-6 border-t border-gray-800 dark:border-gray-700 text-center text-sm">
         <p>&copy; {new Date().getFullYear()} ParkWise. All rights reserved.</p>
       </div>
     </div>
@@ -212,7 +234,8 @@ const Footer = () => (
 
 export default function HomePage() {
   return (
-    <div className="bg-white">
+    // PERUBAHAN: Menambahkan warna background utama untuk dark mode
+    <div className="bg-white dark:bg-gray-900">
       <Header />
       <main>
         <HeroSection />
@@ -224,4 +247,3 @@ export default function HomePage() {
     </div>
   );
 }
-

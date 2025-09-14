@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Clock, MapPin, User, Car, Loader2, ServerCrash, Eye } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import {  Clock, User, Car, Loader2, ServerCrash, Eye, Building, Plane, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -64,34 +64,52 @@ const MonitoringCard = ({ booking }) => {
     );
 };
 
+// --- KOMENTAR: Komponen baru untuk tombol filter ---
+const FilterButton = ({ label, icon: Icon, active, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-all ${
+            active 
+            ? 'bg-blue-600 text-white shadow-md' 
+            : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+    >
+        <Icon size={16} />
+        {label}
+    </button>
+);
+
 export default function MonitoringPage() {
     const [activeBookings, setActiveBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [filterType, setFilterType] = useState('ALL');
 
-    useEffect(() => {
-        const fetchMonitoringData = async () => {
-            setLoading(true);
-            try {
-                const response = await fetch('/api/monitoring');
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || "Gagal memuat data monitoring.");
-                }
-                const data = await response.json();
-                setActiveBookings(data.activeBookings || []);
-            } catch (err) {
-                toast.error(err.message);
-            } finally {
-                setLoading(false);
+
+    const fetchMonitoringData = useCallback(async (type) => {
+        setLoading(true);
+        try {
+            // --- KOMENTAR: Menambahkan parameter 'type' saat memanggil API ---
+            const response = await fetch(`/api/monitoring?type=${type}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Gagal memuat data monitoring.");
             }
-        };
+            const data = await response.json();
+            setActiveBookings(data.activeBookings || []);
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-        fetchMonitoringData();
+        useEffect(() => {
+        fetchMonitoringData(filterType);
         
         // Auto-refresh data setiap 30 detik
         const interval = setInterval(fetchMonitoringData, 30000);
         return () => clearInterval(interval);
-    }, []);
+    }, [filterType, fetchMonitoringData]);
 
     if (loading) {
         return <div className="flex justify-center items-center h-full"><Loader2 className="w-12 h-12 animate-spin text-blue-500" /></div>;
@@ -103,6 +121,14 @@ export default function MonitoringPage() {
                 <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Monitoring Parkir Aktif</h1>
                 <p className="text-gray-500 dark:text-gray-400">Menampilkan semua slot yang sedang terisi di semua lokasi secara real-time.</p>
             </div>
+
+             <div className="flex items-center gap-3 p-2 bg-gray-100 dark:bg-gray-800/50 rounded-full">
+                <FilterButton label="Semua" icon={MapPin} active={filterType === 'ALL'} onClick={() => setFilterType('ALL')} />
+                <FilterButton label="Mall" icon={Building} active={filterType === 'MALL'} onClick={() => setFilterType('MALL')} />
+                <FilterButton label="Bandara" icon={Plane} active={filterType === 'BANDARA'} onClick={() => setFilterType('BANDARA')} />
+                <FilterButton label="Gedung" icon={Building} active={filterType === 'GEDUNG'} onClick={() => setFilterType('GEDUNG')} />
+            </div>
+
             {activeBookings.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {activeBookings.map(booking => (

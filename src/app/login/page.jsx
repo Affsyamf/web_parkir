@@ -121,6 +121,12 @@ export default function LoginPage() {
             Daftar sekarang
           </Link>
         </p>
+        <p className="text-sm text-center text-gray-500">
+          Kembali Ke Dashboard{' '}
+          <Link href="/" className="font-medium text-blue-600 hover:underline">
+            Klik disini
+          </Link>
+        </p>
       </motion.div>
     </div>
   );
