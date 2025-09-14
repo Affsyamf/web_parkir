@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🚗 ParkWise – Solusi Parkir Cerdas
 
-## Getting Started
+ParkWise adalah aplikasi booking dan monitoring lahan parkir modern.  
+Membantu pengguna menemukan, memesan, dan mengelola parkir dengan cepat & mudah.  
 
-First, run the development server:
+![Demo Screenshot](./public/demo.png) <!-- ganti dengan screenshot project kamu -->
+
+---
+
+## ✨ Fitur Utama
+- 🔍 Cari & pilih lokasi parkir
+- 📱 Booking slot parkir secara online
+- ✅ Slot terjamin, tidak perlu berputar-putar
+- 💳 Pembayaran aman & transparan
+- 📊 Admin dashboard dengan laporan real-time
+- 🌙 Mode Gelap & Terang (dark/light mode)
+
+---
+
+## 🛠️ Tech Stack
+- [Next.js](https://nextjs.org/) – React Framework
+- [Tailwind CSS](https://tailwindcss.com/) – Styling
+- [Framer Motion](https://www.framer.com/motion/) – Animasi
+- [PostgreSQL](https://www.postgresql.org/) – Database
+- [Lucide Icons](https://lucide.dev/) – Icon pack
+- [Next-Themes](https://github.com/pacocoursey/next-themes) – Dark/Light Mode
+
+---
+
+## 🚀 Instalasi & Menjalankan
 
 ```bash
+# Clone repositori
+git clone https://github.com/Affsyamf/web_parkir.git
+cd web_parkir
+
+# Install dependencies
+npm install
+
+# Jalankan server development
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
