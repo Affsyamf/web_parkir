@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {  Clock, User, Car, Loader2, ServerCrash, Eye, Building, Plane, MapPin } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Clock, User, Car, Loader2, ServerCrash, Eye, Building, Plane, MapPin } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
+// Komponen Kartu Monitoring tidak berubah secara fungsional
 const MonitoringCard = ({ booking }) => {
     const [timeLeft, setTimeLeft] = useState('');
 
@@ -16,6 +17,7 @@ const MonitoringCard = ({ booking }) => {
 
             if (diff <= 0) {
                 setTimeLeft('Waktu habis!');
+                 clearInterval(interval);
             } else {
                 const hours = Math.floor(diff / (1000 * 60 * 60));
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -34,8 +36,10 @@ const MonitoringCard = ({ booking }) => {
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            layout
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
             className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 border-l-4 border-orange-500"
         >
             <div className="flex justify-between items-center">
@@ -64,7 +68,7 @@ const MonitoringCard = ({ booking }) => {
     );
 };
 
-// --- KOMENTAR: Komponen baru untuk tombol filter ---
+// Komponen baru untuk tombol filter
 const FilterButton = ({ label, icon: Icon, active, onClick }) => (
     <button
         onClick={onClick}
@@ -84,11 +88,9 @@ export default function MonitoringPage() {
     const [loading, setLoading] = useState(true);
     const [filterType, setFilterType] = useState('ALL');
 
-
     const fetchMonitoringData = useCallback(async (type) => {
         setLoading(true);
         try {
-            // --- KOMENTAR: Menambahkan parameter 'type' saat memanggil API ---
             const response = await fetch(`/api/monitoring?type=${type}`);
             if (!response.ok) {
                 const errorData = await response.json();
@@ -103,11 +105,10 @@ export default function MonitoringPage() {
         }
     }, []);
 
-        useEffect(() => {
+    useEffect(() => {
         fetchMonitoringData(filterType);
         
-        // Auto-refresh data setiap 30 detik
-        const interval = setInterval(fetchMonitoringData, 30000);
+        const interval = setInterval(() => fetchMonitoringData(filterType), 30000);
         return () => clearInterval(interval);
     }, [filterType, fetchMonitoringData]);
 
@@ -122,7 +123,7 @@ export default function MonitoringPage() {
                 <p className="text-gray-500 dark:text-gray-400">Menampilkan semua slot yang sedang terisi di semua lokasi secara real-time.</p>
             </div>
 
-             <div className="flex items-center gap-3 p-2 bg-gray-100 dark:bg-gray-800/50 rounded-full">
+            <div className="flex items-center gap-3 p-2 bg-gray-100 dark:bg-gray-800/50 rounded-full">
                 <FilterButton label="Semua" icon={MapPin} active={filterType === 'ALL'} onClick={() => setFilterType('ALL')} />
                 <FilterButton label="Mall" icon={Building} active={filterType === 'MALL'} onClick={() => setFilterType('MALL')} />
                 <FilterButton label="Bandara" icon={Plane} active={filterType === 'BANDARA'} onClick={() => setFilterType('BANDARA')} />
@@ -130,18 +131,21 @@ export default function MonitoringPage() {
             </div>
 
             {activeBookings.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {activeBookings.map(booking => (
-                        <MonitoringCard key={booking.id} booking={booking} />
-                    ))}
-                </div>
+                <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <AnimatePresence>
+                        {activeBookings.map(booking => (
+                            <MonitoringCard key={booking.id} booking={booking} />
+                        ))}
+                    </AnimatePresence>
+                </motion.div>
             ) : (
                  <div className="text-center py-24 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                    <Eye className="mx-auto w-16 h-16 text-gray-400 mb-4"/>
                    <h3 className="text-2xl font-semibold">Tidak Ada Parkir Aktif</h3>
-                   <p className="text-gray-500 mt-2">Semua slot parkir saat ini tersedia.</p>
+                   <p className="text-gray-500 mt-2">Tidak ada booking yang cocok dengan filter yang Anda pilih.</p>
                 </div>
             )}
         </div>
     );
 }
+

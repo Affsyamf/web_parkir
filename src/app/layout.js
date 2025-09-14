@@ -1,35 +1,30 @@
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { ThemeProvider } from '@/components/ThemeProvider';
 import SessionProvider from '@/components/SessionProvider';
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'ParkWise - Solusi Parkir Cerdas',
+  title: 'Parkirin - Dashboard',
   description: 'Aplikasi booking dan monitoring lahan parkir modern.',
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      {/* PERUBAHAN UTAMA DI SINI:
-        - Menambahkan kelas warna dan transisi langsung ke tag <body>.
-        - Ini memastikan seluruh halaman merespons perubahan tema.
-      */}
-      <body 
-        className={`${inter.className} bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300`}
-      >
-        <ThemeProvider 
-          attribute="class"
-          defaultTheme="system" 
-          enableSystem
-          disableTransitionOnChange
-        >
-          <SessionProvider>
-            {children}
-          </SessionProvider>
-        </ThemeProvider>
+      <body className={inter.className}>
+        <SessionProvider>
+          {children}
+          {/* Memindahkan Toaster ke root layout agar konsisten */}
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              success: { style: { background: '#dcfce7', color: '#166534', border: '1px solid #4ade80' } },
+              error: { style: { background: '#fee2e2', color: '#991b1b', border: '1px solid #f87171' } },
+            }}
+          />
+        </SessionProvider>
       </body>
     </html>
   );
