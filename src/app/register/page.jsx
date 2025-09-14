@@ -141,6 +141,12 @@ export default function RegisterPage() {
             Masuk di sini
           </Link>
         </p>
+        <p className="text-sm text-center text-gray-500">
+          Kembali Ke Dashboard{' '}
+          <Link href="/" className="font-medium text-blue-600 hover:underline">
+            Klik
+          </Link>
+        </p>
       </motion.div>
     </div>
   );
