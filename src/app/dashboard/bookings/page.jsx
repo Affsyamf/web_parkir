@@ -7,6 +7,12 @@ import toast from 'react-hot-toast';
 
 const BookingCard = ({ booking, onCheckout, onPrint }) => {
     const statusStyles = {
+        upcoming: {
+            bg: 'bg-yellow-100 dark:bg-yellow-900/50',
+            text: 'text-yellow-800 dark:text-yellow-300',
+            border: 'border-yellow-500',
+            label: 'Mendatang'
+        },
         active: {
             bg: 'bg-blue-100 dark:bg-blue-900/50',
             text: 'text-blue-800 dark:text-blue-300',
@@ -50,7 +56,7 @@ const BookingCard = ({ booking, onCheckout, onPrint }) => {
 
         const interval = setInterval(() => {
             const now = new Date();
-            const endTime = new Date(booking.actual_exit_time);
+            const endTime = new Date(booking.estimated_exit_time);
             const diff = endTime - now;
 
             if (diff <= 0) {
@@ -143,7 +149,7 @@ const BookingCard = ({ booking, onCheckout, onPrint }) => {
                         <Clock size={16} className="text-gray-400"/>
                         <div>
                             <p className="text-gray-500 dark:text-gray-400">Waktu Keluar</p>
-                            <p className="font-semibold text-gray-700 dark:text-gray-300">{isMounted ? formatDateTime(booking.actual_exit_time) : '...'}</p>
+                            <p className="font-semibold text-gray-700 dark:text-gray-300">{isMounted ? formatDateTime(booking.estimated_exit_time) : '...'}</p>
                         </div>
                     </div>
                 </div>
@@ -191,12 +197,11 @@ const BookingCard = ({ booking, onCheckout, onPrint }) => {
 
 
 export default function MyBookingsPage() {
-   const [activeBookings, setActiveBookings] = useState([]);
+    const [upcomingBookings, setUpcomingBookings] = useState([]);
+    const [activeBookings, setActiveBookings] = useState([]);
     const [pastBookings, setPastBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
-
-        // State baru untuk pagination
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
 
@@ -212,6 +217,7 @@ export default function MyBookingsPage() {
             const data = await response.json();
             
             if (currentPage === 1) {
+                setUpcomingBookings(data.upcomingBookings || []);
                 setActiveBookings(data.activeBookings || []);
                 setPastBookings(data.pastBookings || []);
             } else {
@@ -274,6 +280,15 @@ export default function MyBookingsPage() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-12">
+            {upcomingBookings.length > 0 && (
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Booking Mendatang</h1>
+                    <p className="text-gray-500 dark:text-gray-400">Parkir yang sudah Anda jadwalkan.</p>
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {upcomingBookings.map(booking => <BookingCard key={booking.id} booking={booking} />)}
+                    </div>
+                </div>
+            )}
              <div>
                 <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Booking Aktif</h1>
                 <p className="text-gray-500 dark:text-gray-400">Parkir yang sedang berjalan saat ini.</p>
