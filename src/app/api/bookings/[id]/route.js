@@ -1,11 +1,37 @@
-// --- FILE BARU ---
-// Endpoint ini akan menangani aksi untuk satu booking spesifik,
-// seperti menyelesaikan (checkout) sebuah parkir.
-
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+
+
+// --- FUNGSI BARU: GET untuk mengambil detail satu booking ---
+export async function GET(request, { params }) {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+        return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 });
+    }
+
+    try {
+        const { bookingId } = params;
+        const result = await query(
+            `SELECT b.*, l.name as location_name, l.address as location_address
+             FROM bookings b
+             JOIN locations l ON b.location_id = l.id
+             WHERE b.id = $1 AND b.user_id = $2`,
+            [bookingId, session.user.id]
+        );
+
+        if (result.rows.length === 0) {
+            return NextResponse.json({ error: 'Booking tidak ditemukan.' }, { status: 404 });
+        }
+
+        return NextResponse.json({ booking: result.rows[0] }, { status: 200 });
+    } catch (error) {
+        console.error('API GET booking by ID error:', error);
+        return NextResponse.json({ error: 'Gagal mengambil data booking.' }, { status: 500 });
+    }
+}
+
 
 // Handler untuk PUT (digunakan untuk checkout/menyelesaikan booking)
 export async function PUT(request, { params }) {

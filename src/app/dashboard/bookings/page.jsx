@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, Calendar, DollarSign, MapPin, Car, Loader2, ServerCrash, LogOut } from 'lucide-react';
+import { Clock, Calendar, DollarSign, MapPin, Car, Loader2, ServerCrash, LogOut, Printer } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
-const BookingCard = ({ booking, onCheckout }) => {
+const BookingCard = ({ booking, onCheckout, onPrint }) => {
     const statusStyles = {
         active: {
             bg: 'bg-blue-100 dark:bg-blue-900/50',
@@ -42,8 +42,10 @@ const BookingCard = ({ booking, onCheckout }) => {
     // --- State & Logika Baru untuk Timer & Notifikasi ---
     const [timeLeft, setTimeLeft] = useState('');
     const [isCheckingOut, setIsCheckingOut] = useState(false);
+     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
+         setIsMounted(true);
         if (booking.status !== 'active') return;
 
         const interval = setInterval(() => {
@@ -108,6 +110,7 @@ const BookingCard = ({ booking, onCheckout }) => {
 
     return (
         <motion.div
+            id={`booking-card-${booking.id}`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className={`rounded-lg shadow-md overflow-hidden border-l-4 ${currentStatus.border} ${currentStatus.bg}`}
@@ -133,14 +136,14 @@ const BookingCard = ({ booking, onCheckout }) => {
                         <Calendar size={16} className="text-gray-400"/>
                         <div>
                             <p className="text-gray-500 dark:text-gray-400">Waktu Masuk</p>
-                            <p className="font-semibold text-gray-700 dark:text-gray-300">{formatDateTime(booking.entry_time)}</p>
+                            <p className="font-semibold text-gray-700 dark:text-gray-300">{isMounted ? formatDateTime(booking.entry_time) : '...'}</p>
                         </div>
                     </div>
                      <div className="flex items-center gap-2">
                         <Clock size={16} className="text-gray-400"/>
                         <div>
                             <p className="text-gray-500 dark:text-gray-400">Perkiraan Keluar</p>
-                            <p className="font-semibold text-gray-700 dark:text-gray-300">{formatDateTime(booking.estimated_exit_time)}</p>
+                            <p className="font-semibold text-gray-700 dark:text-gray-300">{isMounted ? formatDateTime(booking.estimated_exit_time) : '...'}</p>
                         </div>
                     </div>
                 </div>
@@ -153,7 +156,7 @@ const BookingCard = ({ booking, onCheckout }) => {
                     <>
                         <div className='text-center'>
                            <p className='text-xs font-bold text-orange-500'>Sisa Waktu</p>
-                           <p className='font-mono font-bold text-orange-600 dark:text-orange-400'>{timeLeft}</p>
+                           <p className='font-mono font-bold text-orange-600 dark:text-orange-400'>{isMounted ? timeLeft : '...'}</p>
                         </div>
                         <button 
                             onClick={handleCheckout} 
@@ -166,10 +169,19 @@ const BookingCard = ({ booking, onCheckout }) => {
                     </>
                 ) : (
                     <div className="flex justify-end items-center gap-2 w-full">
-                         <DollarSign size={16} className={currentStatus.text} />
-                         <span className={`font-bold text-lg ${currentStatus.text}`}>
-                            Rp {Number(booking.total_price).toLocaleString('id-ID')}
-                         </span>
+                          <div className="flex items-center gap-2">
+                           <DollarSign size={16} className={currentStatus.text} />
+                           <span className={`font-bold text-lg ${currentStatus.text}`}>
+                                Rp {Number(booking.total_price).toLocaleString('id-ID')}
+                           </span>
+                        </div>
+                         <button 
+                            onClick={() => onPrint(booking.id)}
+                            className="print-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-1 px-3 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+                        >
+                            <Printer size={16} />
+                            Cetak
+                        </button>
                     </div>
                 )}
             </div>
@@ -252,7 +264,13 @@ export default function MyBookingsPage() {
         return <div className="flex justify-center items-center h-full"><Loader2 className="w-12 h-12 animate-spin text-blue-500" /></div>;
     }
 
-   
+    const handlePrint = (bookingId) => {
+        window.open(`/print/${bookingId}`, '_blank');
+    };
+
+    if (loading) {
+        return <div className="flex justify-center items-center h-full"><Loader2 className="w-12 h-12 animate-spin text-blue-500" /></div>;
+    }
 
     return (
         <div className="max-w-7xl mx-auto space-y-12">
@@ -276,8 +294,8 @@ export default function MyBookingsPage() {
                 <p className="text-gray-500 dark:text-gray-400">Semua parkir Anda yang telah selesai.</p>
                 <div className="mt-6 space-y-6">
                     {pastBookings.length > 0 ? (
-                        pastBookings.map(booking => <BookingCard key={booking.id} booking={booking} />)
-                    ) : (
+                        pastBookings.map(booking => <BookingCard key={booking.id} booking={booking} onPrint={handlePrint} />)
+                      ) : (
                         <div className="col-span-full text-center py-16 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                            <ServerCrash className="mx-auto w-12 h-12 text-gray-400 mb-4"/>
                            <h3 className="text-xl font-semibold">Tidak Ada Riwayat</h3>
