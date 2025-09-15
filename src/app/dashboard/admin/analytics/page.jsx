@@ -1,30 +1,32 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DollarSign, BarChart2, PieChart, Loader2, ServerCrash, TrendingUp, Calendar, MapPin } from 'lucide-react';
+import { DollarSign, BarChart2, PieChart, Loader2, ServerCrash, TrendingUp, Calendar, Users } from 'lucide-react';
 import { 
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
-    PieChart as RechartsPieChart, Pie, Cell, Sector, LineChart, Line, Area, AreaChart
+    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+    PieChart as RechartsPieChart, Pie, Cell, Area, AreaChart
 } from 'recharts';
 
-const StatCard = ({ title, value, icon: Icon, trend, color = "green" }) => (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-                <div className={`bg-${color}-100 dark:bg-${color}-900/30 p-3 rounded-xl`}>
-                    <Icon className={`w-6 h-6 text-${color}-600 dark:text-${color}-400`} />
+const StatCard = ({ title, value, icon: Icon, trend, color = "indigo", gradient = false }) => (
+    <div className={`relative overflow-hidden ${gradient ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white' : 'bg-white dark:bg-gray-800'} p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 group`}>
+        <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+                <div className={`${gradient ? 'bg-white/20' : `bg-${color}-100 dark:bg-${color}-900/30`} p-3 rounded-xl transition-transform group-hover:scale-110 duration-300`}>
+                    <Icon className={`w-6 h-6 ${gradient ? 'text-white' : `text-${color}-600 dark:text-${color}-400`}`} />
                 </div>
-                <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{title}</p>
-                    <p className="text-2xl font-bold text-gray-800 dark:text-white">{value}</p>
-                    {trend && (
-                        <p className={`text-xs mt-1 ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {trend > 0 ? '↗' : '↘'} {Math.abs(trend)}% dari minggu lalu
-                        </p>
-                    )}
-                </div>
+                {trend && (
+                    <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${trend > 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                        <span>{trend > 0 ? '↗' : '↘'}</span>
+                        <span>{Math.abs(trend)}%</span>
+                    </div>
+                )}
+            </div>
+            <div>
+                <p className={`text-sm mb-2 ${gradient ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'}`}>{title}</p>
+                <p className={`text-3xl font-bold ${gradient ? 'text-white' : 'text-gray-800 dark:text-white'}`}>{value}</p>
             </div>
         </div>
+        <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-gradient-to-br from-white/5 to-white/10 rounded-full"></div>
     </div>
 );
 
@@ -32,18 +34,20 @@ const StatCard = ({ title, value, icon: Icon, trend, color = "green" }) => (
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-xl border border-gray-200 dark:border-gray-600">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{label}</p>
+            <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
+                <p className="text-sm font-semibold text-gray-800 dark:text-white mb-3">{label}</p>
                 {payload.map((entry, index) => (
-                    <div key={`item-${index}`} className="flex items-center gap-2 mb-1">
-                        <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: entry.color || entry.fill }}
-                        />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {entry.name}:
-                        </span>
-                        <span className="font-semibold text-gray-800 dark:text-white">
+                    <div key={`item-${index}`} className="flex items-center justify-between gap-4 mb-2">
+                        <div className="flex items-center gap-2">
+                            <div 
+                                className="w-3 h-3 rounded-full shadow-sm" 
+                                style={{ backgroundColor: entry.color || entry.fill }}
+                            />
+                            <span className="text-sm text-gray-600 dark:text-gray-300">
+                                {entry.name}
+                            </span>
+                        </div>
+                        <span className="font-bold text-gray-800 dark:text-white">
                             {entry.dataKey === 'Pendapatan' 
                                 ? `Rp ${entry.value.toLocaleString('id-ID')}` 
                                 : entry.value
@@ -57,40 +61,36 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-// Enhanced Active Shape for Pie Chart
-const renderActiveShape = (props) => {
-    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
-    const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-    return (
-        <g>
-            <text x={cx} y={cy - 15} dy={8} textAnchor="middle" className="fill-gray-800 dark:fill-white font-bold text-lg">
-                {payload.name}
-            </text>
-            <text x={cx} y={cy + 5} dy={8} textAnchor="middle" className="fill-gray-600 dark:fill-gray-300 text-sm">
-                {value} booking ({(percent * 100).toFixed(1)}%)
-            </text>
-            <Sector
-                cx={cx}
-                cy={cy}
-                innerRadius={innerRadius}
-                outerRadius={outerRadius + 8}
-                startAngle={startAngle}
-                endAngle={endAngle}
-                fill={fill}
-                className="drop-shadow-lg"
-            />
-        </g>
-    );
+// Improved PieChart tooltip - separate from active shape
+const PieTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+        const data = payload[0];
+        return (
+            <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 backdrop-blur-sm z-50">
+                <div className="flex items-center gap-2 mb-2">
+                    <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: data.payload.fill }}
+                    />
+                    <span className="font-semibold text-gray-800 dark:text-white">
+                        {data.payload.name}
+                    </span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Booking: {data.value}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Persentase: {((data.value / data.payload.total) * 100).toFixed(1)}%
+                </p>
+            </div>
+        );
+    }
+    return null;
 };
 
 export default function AnalyticsPage() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [activeIndex, setActiveIndex] = useState(0);
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -103,7 +103,18 @@ export default function AnalyticsPage() {
                     throw new Error(errorData.error || "Gagal memuat data analytics.");
                 }
                 const analyticsData = await response.json();
-                setData(analyticsData);
+                
+                // Calculate total for percentage calculation
+                const totalBookings = analyticsData.bookingsByLocation.reduce((sum, item) => sum + item.Jumlah, 0);
+                const enhancedLocationData = analyticsData.bookingsByLocation.map(item => ({
+                    ...item,
+                    total: totalBookings
+                }));
+                
+                setData({
+                    ...analyticsData,
+                    bookingsByLocation: enhancedLocationData
+                });
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -112,19 +123,18 @@ export default function AnalyticsPage() {
         };
         fetchAnalyticsData();
     }, []);
-    
-    const onPieEnter = (_, index) => {
-        setActiveIndex(index);
-    };
 
-    // Enhanced color palette
-    const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+    // Enhanced color palette with better contrast
+    const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'];
 
     if (loading) {
         return (
             <div className="flex flex-col justify-center items-center h-96">
-                <Loader2 className="w-12 h-12 animate-spin text-indigo-500 mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">Memuat data analytics...</p>
+                <div className="relative">
+                    <Loader2 className="w-12 h-12 animate-spin text-indigo-500" />
+                    <div className="absolute inset-0 w-12 h-12 rounded-full border-2 border-indigo-200 dark:border-indigo-800"></div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 mt-4 font-medium">Memuat data analytics...</p>
             </div>
         );
     }
@@ -132,14 +142,16 @@ export default function AnalyticsPage() {
     if (error || !data) {
         return (
             <div className="text-center py-24">
-               <ServerCrash className="mx-auto w-16 h-16 text-gray-400 mb-4"/>
-               <h3 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2">Gagal Memuat Data</h3>
-               <p className="text-gray-500 dark:text-gray-400">
-                   {error || "Tidak dapat mengambil data laporan saat ini."}
+               <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-2xl inline-block mb-6">
+                   <ServerCrash className="mx-auto w-16 h-16 text-red-500 mb-4"/>
+               </div>
+               <h3 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Gagal Memuat Data</h3>
+               <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                   {error || "Tidak dapat mengambil data laporan saat ini. Silakan coba lagi dalam beberapa saat."}
                </p>
                <button 
                    onClick={() => window.location.reload()} 
-                   className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                   className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
                >
                    Coba Lagi
                </button>
@@ -148,179 +160,227 @@ export default function AnalyticsPage() {
     }
     
     return (
-        <div className="space-y-8 p-6">
-            <div className="text-center md:text-left">
-                <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-2">
-                    Laporan & Analytics
-                </h1>
-                <p className="text-gray-500 dark:text-gray-400 text-lg">
-                    Ringkasan performa dan pendapatan aplikasi Anda
-                </p>
-            </div>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                {/* Header Section */}
+                <div className="text-center mb-12">
+                    <div className="inline-flex items-center gap-3 bg-white dark:bg-gray-800 px-6 py-3 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mb-6">
+                        <TrendingUp className="w-6 h-6 text-indigo-600" />
+                        <span className="text-lg font-semibold text-gray-800 dark:text-white">Dashboard Analytics</span>
+                    </div>
+                    <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-4">
+                        Laporan & Analytics
+                    </h1>
+                    <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                        Laporan Parkir Afif
+                    </p>
+                </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard 
-                    title="Total Pendapatan" 
-                    value={`Rp ${Number(data.totalRevenue).toLocaleString('id-ID')}`} 
-                    icon={DollarSign} 
-                    trend={15}
-                    color="green"
-                />
-                <StatCard 
-                    title="Total Booking" 
-                    value={data.totalBookings} 
-                    icon={BarChart2} 
-                    trend={8}
-                    color="blue"
-                />
-                <StatCard 
-                    title="Booking Aktif" 
-                    value={data.activeBookingsCount || 0} 
-                    icon={Calendar} 
-                    color="purple"
-                />
-                <StatCard 
-                    title="Lokasi Terpopuler" 
-                    value={data.bookingsByLocation[0]?.name?.split(' ')[0] + '...' || '-'} 
-                    icon={MapPin} 
-                    color="orange"
-                />
-            </div>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                    <StatCard 
+                        title="Total Pendapatan" 
+                        value={`Rp ${Number(data.totalRevenue).toLocaleString('id-ID')}`} 
+                        icon={DollarSign} 
+                        trend={15}
+                        color="green"
+                        gradient={true}
+                    />
+                    <StatCard 
+                        title="Total Booking" 
+                        value={data.totalBookings} 
+                        icon={BarChart2} 
+                        trend={8}
+                        color="blue"
+                    />
+                    <StatCard 
+                        title="Booking Aktif" 
+                        value={data.activeBookingsCount || 0} 
+                        icon={Calendar} 
+                        color="purple"
+                    />
+                    <StatCard 
+                        title="Rata-rata per Booking" 
+                        value={`Rp ${Math.round(data.totalRevenue / data.totalBookings).toLocaleString('id-ID')}`} 
+                        icon={Users} 
+                        color="orange"
+                    />
+                </div>
 
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                {/* Revenue Area Chart */}
-                <div className="xl:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-                            <BarChart2 className="w-5 h-5 text-indigo-600" />
-                            Pendapatan 7 Hari Terakhir
-                        </h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
-                            <span>Pendapatan (Rp)</span>
+                {/* Charts Section */}
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-12">
+                    {/* Revenue Area Chart */}
+                    <div className="xl:col-span-2 bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-8">
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Pendapatan Harian</h3>
+                                <p className="text-gray-500 dark:text-gray-400">Tren pendapatan 7 hari terakhir</p>
+                            </div>
+                            <div className="flex items-center gap-3 bg-indigo-50 dark:bg-indigo-900/30 px-4 py-2 rounded-xl">
+                                <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
+                                <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">Pendapatan (Rp)</span>
+                            </div>
+                        </div>
+                        <ResponsiveContainer width="100%" height={400}>
+                            <AreaChart data={data.bookingsByDay} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                                <defs>
+                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.9}/>
+                                        <stop offset="50%" stopColor="#6366f1" stopOpacity={0.4}/>
+                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0.1}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.4} />
+                                <XAxis 
+                                    dataKey="date" 
+                                    stroke="#6b7280" 
+                                    fontSize={12}
+                                    fontWeight={500}
+                                    tickLine={false}
+                                    axisLine={false}
+                                />
+                                <YAxis 
+                                    stroke="#6b7280" 
+                                    fontSize={12}
+                                    fontWeight={500}
+                                    tickFormatter={(value) => `${value/1000}k`}
+                                    tickLine={false}
+                                    axisLine={false}
+                                />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Area
+                                    type="monotone"
+                                    dataKey="Pendapatan"
+                                    stroke="#6366f1"
+                                    strokeWidth={4}
+                                    fill="url(#colorRevenue)"
+                                    fillOpacity={1}
+                                    animationDuration={2000}
+                                    dot={{ fill: '#6366f1', strokeWidth: 3, stroke: '#ffffff', r: 6 }}
+                                    activeDot={{ r: 8, stroke: '#6366f1', strokeWidth: 3, fill: '#ffffff' }}
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    {/* Location Pie Chart */}
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700">
+                        <div className="mb-8">
+                            <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Distribusi Lokasi</h3>
+                            <p className="text-gray-500 dark:text-gray-400">Sebaran booking per lokasi</p>
+                        </div>
+                        
+                        <div className="relative mb-6">
+                            <ResponsiveContainer width="100%" height={280}>
+                                <RechartsPieChart>
+                                    <Pie 
+                                        data={data.bookingsByLocation} 
+                                        dataKey="Jumlah" 
+                                        nameKey="name" 
+                                        cx="50%" 
+                                        cy="50%" 
+                                        innerRadius={60}
+                                        outerRadius={110} 
+                                        paddingAngle={3}
+                                        animationBegin={500}
+                                        animationDuration={1500}
+                                    >
+                                        {data.bookingsByLocation.map((entry, index) => (
+                                            <Cell 
+                                                key={`cell-${index}`} 
+                                                fill={COLORS[index % COLORS.length]}
+                                                stroke="#ffffff"
+                                                strokeWidth={2}
+                                            />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip content={<PieTooltip />} />
+                                </RechartsPieChart>
+                            </ResponsiveContainer>
+                        </div>
+                        
+                        {/* Enhanced Legend */}
+                        <div className="space-y-3">
+                            {data.bookingsByLocation.slice(0, 4).map((location, index) => (
+                                <div key={index} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                                    <div className="flex items-center gap-3">
+                                        <div 
+                                            className="w-4 h-4 rounded-full shadow-sm" 
+                                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                        />
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate max-w-[140px]">
+                                            {location.name}
+                                        </span>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-sm font-bold text-gray-800 dark:text-white">
+                                            {location.Jumlah}
+                                        </div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            {((location.Jumlah / location.total) * 100).toFixed(1)}%
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {data.bookingsByLocation.length > 4 && (
+                                <div className="text-center text-sm text-gray-500 dark:text-gray-400 pt-2">
+                                    +{data.bookingsByLocation.length - 4} lokasi lainnya
+                                </div>
+                            )}
                         </div>
                     </div>
-                    <ResponsiveContainer width="100%" height={350}>
-                        <AreaChart data={data.bookingsByDay} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
-                                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0.1}/>
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
-                            <XAxis 
-                                dataKey="date" 
-                                stroke="#6b7280" 
-                                fontSize={12}
-                                tickLine={false}
-                                axisLine={false}
-                            />
-                            <YAxis 
-                                stroke="#6b7280" 
-                                fontSize={12}
-                                tickFormatter={(value) => `${value/1000}k`}
-                                tickLine={false}
-                                axisLine={false}
-                            />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Area
-                                type="monotone"
-                                dataKey="Pendapatan"
-                                stroke="#6366f1"
-                                strokeWidth={3}
-                                fill="url(#colorRevenue)"
-                                fillOpacity={1}
-                                animationDuration={2000}
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
                 </div>
 
-                {/* Location Pie Chart */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-                            <PieChart className="w-5 h-5 text-emerald-600" />
-                            Distribusi per Lokasi
-                        </h3>
-                    </div>
-                    <ResponsiveContainer width="100%" height={350}>
-                       <RechartsPieChart>
-                           <Pie 
-                                data={data.bookingsByLocation} 
-                                dataKey="Jumlah" 
-                                nameKey="name" 
-                                cx="50%" 
-                                cy="50%" 
-                                innerRadius={70}
-                                outerRadius={120} 
-                                paddingAngle={2}
-                                activeIndex={activeIndex}
-                                activeShape={renderActiveShape}
-                                onMouseEnter={onPieEnter}
-                                animationBegin={0}
-                                animationDuration={1500}
-                           >
-                               {data.bookingsByLocation.map((entry, index) => (
-                                   <Cell 
-                                       key={`cell-${index}`} 
-                                       fill={COLORS[index % COLORS.length]}
-                                       className="hover:brightness-110 transition-all duration-200"
-                                   />
-                               ))}
-                           </Pie>
-                           <Tooltip content={<CustomTooltip />}/>
-                       </RechartsPieChart>
-                    </ResponsiveContainer>
-                    
-                    {/* Legend */}
-                    <div className="mt-4 space-y-2">
-                        {data.bookingsByLocation.slice(0, 3).map((location, index) => (
-                            <div key={index} className="flex items-center justify-between text-sm">
-                                <div className="flex items-center gap-2">
-                                    <div 
-                                        className="w-3 h-3 rounded-full" 
-                                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                                    />
-                                    <span className="text-gray-600 dark:text-gray-300 truncate max-w-[120px]">
-                                        {location.name}
-                                    </span>
+                {/* Insights Section */}
+                <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-1 rounded-3xl shadow-2xl">
+                    <div className="bg-white dark:bg-gray-900 p-8 rounded-[22px]">
+                        <div className="text-center mb-8">
+                            <h3 className="text-3xl font-bold text-gray-800 dark:text-white mb-3">
+                                Insights & Rekomendasi
+                            </h3>
+                            <p className="text-gray-600 dark:text-gray-400">
+                                Analisis mendalam berdasarkan data performa Anda
+                            </p>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-2xl border border-green-200 dark:border-green-800">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="bg-green-100 dark:bg-green-900/50 p-2 rounded-lg">
+                                        <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                    </div>
+                                    <h4 className="font-bold text-green-800 dark:text-green-300">Performa Terbaik</h4>
                                 </div>
-                                <span className="font-medium text-gray-800 dark:text-white">
-                                    {location.Jumlah}
-                                </span>
+                                <p className="text-green-700 dark:text-green-400 text-sm">
+                                    <span className="font-semibold">{data.bookingsByLocation[0]?.name}</span> memimpin dengan{' '}
+                                    <span className="font-bold">{data.bookingsByLocation[0]?.Jumlah} booking</span>
+                                </p>
                             </div>
-                        ))}
-                        {data.bookingsByLocation.length > 3 && (
-                            <div className="text-xs text-gray-500 text-center pt-2">
-                                +{data.bookingsByLocation.length - 3} lokasi lainnya
+                            
+                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-2xl border border-blue-200 dark:border-blue-800">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="bg-blue-100 dark:bg-blue-900/50 p-2 rounded-lg">
+                                        <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <h4 className="font-bold text-blue-800 dark:text-blue-300">Pendapatan Harian</h4>
+                                </div>
+                                <p className="text-blue-700 dark:text-blue-400 text-sm">
+                                    Rata-rata <span className="font-bold">Rp {Math.round(data.totalRevenue / 7).toLocaleString('id-ID')}</span> per hari
+                                </p>
                             </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Additional Insights */}
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-6 rounded-xl border border-indigo-200 dark:border-indigo-800">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-indigo-600" />
-                    Insights & Rekomendasi
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                        <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">📈 Performa Terbaik</p>
-                        <p className="text-gray-600 dark:text-gray-400">
-                            {data.bookingsByLocation[0]?.name} memimpin dengan {data.bookingsByLocation[0]?.Jumlah} booking
-                        </p>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                        <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">💰 Rata-rata per Booking</p>
-                        <p className="text-gray-600 dark:text-gray-400">
-                            Rp {Math.round(data.totalRevenue / data.totalBookings).toLocaleString('id-ID')}
-                        </p>
+                            
+                            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-2xl border border-purple-200 dark:border-purple-800">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="bg-purple-100 dark:bg-purple-900/50 p-2 rounded-lg">
+                                        <BarChart2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                    </div>
+                                    <h4 className="font-bold text-purple-800 dark:text-purple-300">Tingkat Okupansi</h4>
+                                </div>
+                                <p className="text-purple-700 dark:text-purple-400 text-sm">
+                                    <span className="font-bold">{data.activeBookingsCount}</span> booking sedang aktif saat ini
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
