@@ -21,7 +21,7 @@ export async function GET(request) {
 
     // 1. Ambil SEMUA booking yang aktif (biasanya tidak banyak)
     const activeBookingsResult = await query(
-      `SELECT b.id, b.status, b.entry_time, b.estimated_exit_time, b.total_price, l.name as location_name, ps.spot_code
+      `SELECT b.id, b.status, b.entry_time, b.actual_exit_time, b.total_price, l.name as location_name, ps.spot_code
        FROM bookings b
        LEFT JOIN locations l ON b.location_id = l.id
        LEFT JOIN parking_slots ps ON b.spot_id = ps.id
@@ -32,7 +32,7 @@ export async function GET(request) {
 
      // 2. Ambil RIWAYAT booking (yang sudah tidak aktif) secara bertahap (paginated)
     const pastBookingsResult = await query(
-      `SELECT b.id, b.status, b.entry_time, b.estimated_exit_time, b.total_price, l.name as location_name, ps.spot_code
+      `SELECT b.id, b.status, b.entry_time, b.actual_exit_time, b.total_price, l.name as location_name, ps.spot_code
        FROM bookings b
        LEFT JOIN locations l ON b.location_id = l.id
        LEFT JOIN parking_slots ps ON b.spot_id = ps.id
@@ -104,7 +104,7 @@ export async function POST(request) {
     await query("UPDATE parking_slots SET status = 'booked' WHERE id = $1", [slotId]);
 
     const bookingResult = await query(
-      `INSERT INTO bookings (user_id, spot_id, location_id, entry_time, estimated_exit_time, total_price, status) 
+      `INSERT INTO bookings (user_id, spot_id, location_id, entry_time, actual_exit_time, total_price, status) 
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [userId, slotId, slot.location_id, startTime, estimatedEndTime, totalPrice, 'active']
     );

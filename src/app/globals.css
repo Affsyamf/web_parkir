@@ -26,16 +26,5 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-@media print {
-  @page {
-    size: A4 portrait;
-    margin: 10mm; /* sedikit margin biar tidak kepotong */
-  }
 
-  body {
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
-  }
-}
 
