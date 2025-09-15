@@ -148,8 +148,12 @@ const BookingCard = ({ booking, onCheckout, onPrint }) => {
                      <div className="flex items-center gap-2">
                         <Clock size={16} className="text-gray-400"/>
                         <div>
-                            <p className="text-gray-500 dark:text-gray-400">Waktu Keluar</p>
-                            <p className="font-semibold text-gray-700 dark:text-gray-300">{isMounted ? formatDateTime(booking.actual_exit_time) : '...'}</p>
+                            <p className="text-gray-500 dark:text-gray-400">
+                                {booking.status === 'active' || booking.status === 'upcoming' ? 'Perkiraan Keluar' : 'Waktu Keluar'}
+                            </p>
+                            <p className="font-semibold text-gray-700 dark:text-gray-300">
+                                {isMounted ? formatDateTime(booking.actual_exit_time || booking.estimated_exit_time) : '...'}
+                            </p>
                         </div>
                     </div>
                 </div>
