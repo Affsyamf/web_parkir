@@ -10,9 +10,14 @@ async function getBookingData(bookingId, userId) {
     try {
         const cleanedBookingId = bookingId.split(':')[0];
         const result = await query(
-            `SELECT b.*, l.name as location_name, l.address as location_address
+            `SELECT 
+             b.id, b.status, b.entry_time, b.actual_exit_time, b.estimated_exit_time, b.total_price,
+             l.name as location_name, 
+             l.address as location_address, 
+             ps.spot_code
              FROM bookings b
              JOIN locations l ON b.location_id = l.id
+             LEFT JOIN parking_slots ps ON b.spot_id = ps.id
              WHERE b.id = $1 AND b.user_id = $2`,
             [cleanedBookingId, userId]
         );
