@@ -6,7 +6,8 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Home, ParkingCircle, User, Shield, Search, Eye, BarChart3, X
+    Home, ParkingCircle, User, Shield, Search, Eye, BarChart3, X,
+    Download
 } from 'lucide-react';
 import SignOutButton from '@/app/dashboard/_components/SignOutButton';
 
@@ -49,6 +50,7 @@ const SidebarContent = () => {
                         <ActiveLink href="/dashboard/admin" icon={Shield}>Kelola Lokasi</ActiveLink>
                         <ActiveLink href="/dashboard/admin/monitoring" icon={Eye}>Monitoring</ActiveLink>
                         <ActiveLink href="/dashboard/admin/analytics" icon={BarChart3}>Analytics</ActiveLink>
+                        <ActiveLink href="/dashboard/admin/report" icon={Download}>Report</ActiveLink>
                     </div>
                 )}
             </nav>

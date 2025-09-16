@@ -11,6 +11,12 @@ export const authOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
+
+      session:{
+        strategy: 'jwt',
+        maxAge: 60 * 60, 
+      },
+
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null;

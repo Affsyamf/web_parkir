@@ -123,7 +123,7 @@ export default function MonitoringPage() {
                 <p className="text-gray-500 dark:text-gray-400">Menampilkan semua slot yang sedang terisi di semua lokasi secara real-time.</p>
             </div>
 
-            <div className="flex items-center gap-3 p-2 bg-gray-100 dark:bg-gray-800/50 rounded-full">
+            <div className="flex items-center gap-3 p-2 bg-gray-100 dark:bg-gray-800/50 rounded-full overflow-x-auto whitespace-nowrap scrollbar-hide">
                 <FilterButton label="Semua" icon={MapPin} active={filterType === 'ALL'} onClick={() => setFilterType('ALL')} />
                 <FilterButton label="Mall" icon={Building} active={filterType === 'MALL'} onClick={() => setFilterType('MALL')} />
                 <FilterButton label="Bandara" icon={Plane} active={filterType === 'BANDARA'} onClick={() => setFilterType('BANDARA')} />
