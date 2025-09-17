@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DollarSign, BarChart2, PieChart, Loader2, ServerCrash, TrendingUp, Calendar, Users } from 'lucide-react';
+import { DollarSign, BarChart2, PieChart, Loader2, ServerCrash, TrendingUp, Calendar, MapPin, Users } from 'lucide-react';
 import { 
-    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     PieChart as RechartsPieChart, Pie, Cell, Area, AreaChart
 } from 'recharts';
 
@@ -44,14 +44,11 @@ const CustomTooltip = ({ active, payload, label }) => {
                                 style={{ backgroundColor: entry.color || entry.fill }}
                             />
                             <span className="text-sm text-gray-600 dark:text-gray-300">
-                                {entry.name}
+                                Pendapatan
                             </span>
                         </div>
                         <span className="font-bold text-gray-800 dark:text-white">
-                            {entry.dataKey === 'Pendapatan' 
-                                ? `Rp ${entry.value.toLocaleString('id-ID')}` 
-                                : entry.value
-                            }
+                            Rp {Number(entry.value || 0).toLocaleString('id-ID')}
                         </span>
                     </div>
                 ))}
@@ -172,7 +169,7 @@ export default function AnalyticsPage() {
                         Laporan & Analytics
                     </h1>
                     <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                        Laporan Parkir Afif
+                        Pantau performa bisnis Anda dengan insight mendalam dan visualisasi data yang komprehensif
                     </p>
                 </div>
 
@@ -221,8 +218,8 @@ export default function AnalyticsPage() {
                                 <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">Pendapatan (Rp)</span>
                             </div>
                         </div>
-                        <ResponsiveContainer width="100%" height={400}>
-                            <AreaChart data={data.bookingsByDay} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                        <ResponsiveContainer width="100%" height={350}>
+                            <AreaChart data={data.bookingsByDay} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="#6366f1" stopOpacity={0.9}/>
@@ -261,6 +258,128 @@ export default function AnalyticsPage() {
                                 />
                             </AreaChart>
                         </ResponsiveContainer>
+                        
+                        {/* Enhanced Statistics Cards Below Chart */}
+                        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <div className="mb-4">
+                                <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">Ringkasan Performa</h4>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Analisis mendalam data 7 hari terakhir</p>
+                            </div>
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                {/* Highest Day Card */}
+                                <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-5 rounded-2xl border border-green-200 dark:border-green-800/50 hover:shadow-lg transition-all duration-300 group">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="bg-green-100 dark:bg-green-900/50 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                                            <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">Peak Day</p>
+                                            <p className="text-sm font-bold text-green-800 dark:text-green-300">
+                                                {(() => {
+                                                    const highest = data.bookingsByDay.reduce((prev, current) => 
+                                                        (prev.Pendapatan > current.Pendapatan) ? prev : current
+                                                    );
+                                                    return highest.date;
+                                                })()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xl font-bold text-green-700 dark:text-green-300">
+                                            Rp {data.bookingsByDay.reduce((prev, current) => 
+                                                (prev.Pendapatan > current.Pendapatan) ? prev : current
+                                            ).Pendapatan.toLocaleString('id-ID')}
+                                        </p>
+                                        <p className="text-xs text-green-600 dark:text-green-400">Pendapatan tertinggi</p>
+                                    </div>
+                                </div>
+
+                                {/* Lowest Day Card */}
+                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-5 rounded-2xl border border-blue-200 dark:border-blue-800/50 hover:shadow-lg transition-all duration-300 group">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="bg-blue-100 dark:bg-blue-900/50 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                                            <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Low Day</p>
+                                            <p className="text-sm font-bold text-blue-800 dark:text-blue-300">
+                                                {(() => {
+                                                    const lowest = data.bookingsByDay.reduce((prev, current) => 
+                                                        (prev.Pendapatan < current.Pendapatan) ? prev : current
+                                                    );
+                                                    return lowest.date;
+                                                })()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xl font-bold text-blue-700 dark:text-blue-300">
+                                            Rp {data.bookingsByDay.reduce((prev, current) => 
+                                                (prev.Pendapatan < current.Pendapatan) ? prev : current
+                                            ).Pendapatan.toLocaleString('id-ID')}
+                                        </p>
+                                        <p className="text-xs text-blue-600 dark:text-blue-400">Pendapatan terendah</p>
+                                    </div>
+                                </div>
+
+                                {/* Average Card */}
+                                <div className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 p-5 rounded-2xl border border-purple-200 dark:border-purple-800/50 hover:shadow-lg transition-all duration-300 group">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="bg-purple-100 dark:bg-purple-900/50 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                                            <BarChart2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">Average</p>
+                                            <p className="text-sm font-bold text-purple-800 dark:text-purple-300">Per Hari</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xl font-bold text-purple-700 dark:text-purple-300">
+                                            Rp {Math.round(data.totalRevenue / data.bookingsByDay.length).toLocaleString('id-ID')}
+                                        </p>
+                                        <p className="text-xs text-purple-600 dark:text-purple-400">Rata-rata harian</p>
+                                    </div>
+                                </div>
+
+                                {/* Trend Card */}
+                                <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-5 rounded-2xl border border-amber-200 dark:border-amber-800/50 hover:shadow-lg transition-all duration-300 group">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="bg-amber-100 dark:bg-amber-900/50 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                                            <Users className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wide">Trend</p>
+                                            <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                                                {(() => {
+                                                    const firstDay = data.bookingsByDay[0]?.Pendapatan || 0;
+                                                    const lastDay = data.bookingsByDay[data.bookingsByDay.length - 1]?.Pendapatan || 0;
+                                                    return lastDay > firstDay ? "Naik" : lastDay < firstDay ? "Turun" : "Stabil";
+                                                })()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className={`text-xl font-bold ${(() => {
+                                            const firstDay = data.bookingsByDay[0]?.Pendapatan || 0;
+                                            const lastDay = data.bookingsByDay[data.bookingsByDay.length - 1]?.Pendapatan || 0;
+                                            if (lastDay > firstDay) return "text-green-600 dark:text-green-400";
+                                            if (lastDay < firstDay) return "text-red-600 dark:text-red-400";
+                                            return "text-amber-700 dark:text-amber-300";
+                                        })()}`}>
+                                            {(() => {
+                                                const firstDay = data.bookingsByDay[0]?.Pendapatan || 0;
+                                                const lastDay = data.bookingsByDay[data.bookingsByDay.length - 1]?.Pendapatan || 0;
+                                                const trend = lastDay > firstDay ? '↗' : lastDay < firstDay ? '↘' : '→';
+                                                if (firstDay === 0) return `${trend} 0%`;
+                                                const change = ((lastDay - firstDay) / firstDay * 100).toFixed(1);
+                                                return `${trend} ${Math.abs(change)}%`;
+                                            })()}
+                                        </p>
+                                        <p className="text-xs text-amber-600 dark:text-amber-400">Perubahan minggu ini</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Location Pie Chart */}
@@ -271,7 +390,7 @@ export default function AnalyticsPage() {
                         </div>
                         
                         <div className="relative mb-6">
-                            <ResponsiveContainer width="100%" height={280}>
+                            <ResponsiveContainer width="100%" height={260}>
                                 <RechartsPieChart>
                                     <Pie 
                                         data={data.bookingsByLocation} 
@@ -332,54 +451,52 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* Insights Section */}
-                <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-1 rounded-3xl shadow-2xl">
-                    <div className="bg-white dark:bg-gray-900 p-8 rounded-[22px]">
-                        <div className="text-center mb-8">
-                            <h3 className="text-3xl font-bold text-gray-800 dark:text-white mb-3">
-                                Insights & Rekomendasi
-                            </h3>
-                            <p className="text-gray-600 dark:text-gray-400">
-                                Analisis mendalam berdasarkan data performa Anda
+                <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700">
+                    <div className="text-center mb-8">
+                        <h3 className="text-3xl font-bold text-gray-800 dark:text-white mb-3">
+                            Insights & Rekomendasi
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400">
+                            Analisis mendalam berdasarkan data performa Anda
+                        </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="bg-gray-50 dark:bg-gray-700/30 p-6 rounded-2xl border border-gray-200 dark:border-gray-600 hover:shadow-lg transition-all duration-300">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-xl">
+                                    <TrendingUp className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                                </div>
+                                <h4 className="text-lg font-bold text-gray-800 dark:text-white">Performa Terbaik</h4>
+                            </div>
+                            <p className="text-gray-700 dark:text-gray-300">
+                                <span className="font-semibold">{data.bookingsByLocation[0]?.name}</span> memimpin dengan{' '}
+                                <span className="font-bold text-indigo-600 dark:text-indigo-400">{data.bookingsByLocation[0]?.Jumlah} booking</span>
                             </p>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-2xl border border-green-200 dark:border-green-800">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="bg-green-100 dark:bg-green-900/50 p-2 rounded-lg">
-                                        <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                    </div>
-                                    <h4 className="font-bold text-green-800 dark:text-green-300">Performa Terbaik</h4>
+                        <div className="bg-gray-50 dark:bg-gray-700/30 p-6 rounded-2xl border border-gray-200 dark:border-gray-600 hover:shadow-lg transition-all duration-300">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-xl">
+                                    <DollarSign className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                                 </div>
-                                <p className="text-green-700 dark:text-green-400 text-sm">
-                                    <span className="font-semibold">{data.bookingsByLocation[0]?.name}</span> memimpin dengan{' '}
-                                    <span className="font-bold">{data.bookingsByLocation[0]?.Jumlah} booking</span>
-                                </p>
+                                <h4 className="text-lg font-bold text-gray-800 dark:text-white">Pendapatan Harian</h4>
                             </div>
-                            
-                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-2xl border border-blue-200 dark:border-blue-800">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="bg-blue-100 dark:bg-blue-900/50 p-2 rounded-lg">
-                                        <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                    </div>
-                                    <h4 className="font-bold text-blue-800 dark:text-blue-300">Pendapatan Harian</h4>
+                            <p className="text-gray-700 dark:text-gray-300">
+                                Rata-rata <span className="font-bold text-indigo-600 dark:text-indigo-400">Rp {Math.round(data.totalRevenue / 7).toLocaleString('id-ID')}</span> per hari
+                            </p>
+                        </div>
+                        
+                        <div className="bg-gray-50 dark:bg-gray-700/30 p-6 rounded-2xl border border-gray-200 dark:border-gray-600 hover:shadow-lg transition-all duration-300">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-xl">
+                                    <BarChart2 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                                 </div>
-                                <p className="text-blue-700 dark:text-blue-400 text-sm">
-                                    Rata-rata <span className="font-bold">Rp {Math.round(data.totalRevenue / 7).toLocaleString('id-ID')}</span> per hari
-                                </p>
+                                <h4 className="text-lg font-bold text-gray-800 dark:text-white">Tingkat Okupansi</h4>
                             </div>
-                            
-                            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-2xl border border-purple-200 dark:border-purple-800">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="bg-purple-100 dark:bg-purple-900/50 p-2 rounded-lg">
-                                        <BarChart2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                                    </div>
-                                    <h4 className="font-bold text-purple-800 dark:text-purple-300">Tingkat Okupansi</h4>
-                                </div>
-                                <p className="text-purple-700 dark:text-purple-400 text-sm">
-                                    <span className="font-bold">{data.activeBookingsCount}</span> booking sedang aktif saat ini
-                                </p>
-                            </div>
+                            <p className="text-gray-700 dark:text-gray-300">
+                                <span className="font-bold text-indigo-600 dark:text-indigo-400">{data.activeBookingsCount}</span> booking sedang aktif saat ini
+                            </p>
                         </div>
                     </div>
                 </div>
