@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Loader2, ServerCrash, Printer, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -70,14 +71,11 @@ export default function ReportPage() {
         fetchReport(typeFilter, searchTerm, currentPage);
     }, [typeFilter, searchTerm, currentPage, fetchReport]);
 
-    const handlePrint = () => {window.print(); };
     const filterOptions = ['ALL', 'MALL', 'BANDARA', 'GEDUNG'];
-
     const handleSearchChange = (newSearchTerm) => {
         setSearchTerm(newSearchTerm);
         setCurrentPage(1); // Reset ke halaman 1 saat ada pencarian baru
     };
-
      const handleFilterChange = (option) => {
         setTypeFilter(option);
         setSearchTerm('')
@@ -91,10 +89,15 @@ export default function ReportPage() {
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Laporan Booking</h1>
                     <p className="text-gray-500 dark:text-gray-400">Lihat dan cetak riwayat semua booking yang telah selesai.</p>
                 </div>
-                <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700">
+               <Link 
+                    href={`/report/print?type=${typeFilter}&search=${searchTerm}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700"
+                >
                     <Printer size={18} />
                     Cetak Laporan
-                </button>
+                </Link>
             </div>
 
            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
