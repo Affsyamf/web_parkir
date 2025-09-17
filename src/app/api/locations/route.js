@@ -19,7 +19,6 @@ export async function GET(request) {
 
     const searchTermPattern = `%${searchTerm}%`;
 
-    // --- KOMENTAR: Menambahkan 3 query baru untuk statistik ---
     // Semua query dijalankan secara paralel untuk efisiensi maksimal
     const [
         locationsResult, 

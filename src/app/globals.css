@@ -31,4 +31,22 @@ body {
   scrollbar-width: none;  /* Firefox */
 }
 
+@media print {
+    /* Sembunyikan semua elemen KECUALI konten utama dari layout dashboard */
+    body > div > aside,
+    body > div > div > header {
+        display: none !important;
+    }
+
+    /* Pastikan konten utama memenuhi halaman cetak */
+    body > div > div > main {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Sembunyikan tombol filter dan cetak saat mencetak */
+    .flex.justify-between, .bg-white.dark\\:bg-gray-800.p-4 {
+        display: none !important;
+    }
+}
 
