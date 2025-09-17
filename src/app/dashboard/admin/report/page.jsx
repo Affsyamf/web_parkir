@@ -1,8 +1,41 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Loader2, ServerCrash, Printer } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Loader2, ServerCrash, Printer, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
+
+
+const DebouncedSearchInput = ({ value, onChange, delay = 500 }) => {
+    const [inputValue, setInputValue] = useState(value);
+
+      useEffect(() => {
+        setInputValue(value);
+    }, [value]);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            if (inputValue !== value) {
+                onChange(inputValue);
+            }
+        }, delay);
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [inputValue, delay, onChange]);
+    return (
+        <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Cari nama pengguna/lokasi..."
+                className="pl-10 pr-4 py-2 w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"
+            />
+        </div>
+    );
+};
+
 
 // PERBAIKAN: Nama komponen menggunakan PascalCase (ReportPage)
 export default function ReportPage() {
@@ -10,34 +43,46 @@ export default function ReportPage() {
     const [reportData, setReportData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [typeFilter, setTypeFilter] = useState('ALL');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const ITEMS_PER_PAGE = 10;
+    const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
-    const fetchReport = async (filter) => {
+    const fetchReport = useCallback( async (filter, search, page) => {
         setLoading(true);
         try {
-            const response = await fetch(`/api/report?type=${filter}`);
+            const response = await fetch(`/api/report?type=${filter}&search=${search}&page=${page}`);
             if (!response.ok) {
                 throw new Error('Gagal memuat data laporan');
             }
             const data = await response.json();
-            // PERBAIKAN: Menggunakan setter state yang benar
             setReportData(data.reportData || []);
+            setTotalCount(data.totalCount || 0);
         } catch (err) {
             toast.error(err.message);
         } finally {
-            // PERBAIKAN: Menggunakan setter state yang benar
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        fetchReport(typeFilter);
-    }, [typeFilter]);
+        fetchReport(typeFilter, searchTerm, currentPage);
+    }, [typeFilter, searchTerm, currentPage, fetchReport]);
 
-    const handlePrint = () => {
-        window.print();
+    const handlePrint = () => {window.print(); };
+    const filterOptions = ['ALL', 'MALL', 'BANDARA', 'GEDUNG'];
+
+    const handleSearchChange = (newSearchTerm) => {
+        setSearchTerm(newSearchTerm);
+        setCurrentPage(1); // Reset ke halaman 1 saat ada pencarian baru
     };
 
-    const filterOptions = ['ALL', 'MALL', 'BANDARA', 'GEDUNG'];
+     const handleFilterChange = (option) => {
+        setTypeFilter(option);
+        setSearchTerm('')
+        setCurrentPage(1); // Reset ke halaman 1 saat filter diubah
+    };
 
     return (
         <div className="space-y-8">
@@ -52,14 +97,14 @@ export default function ReportPage() {
                 </button>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md flex items-center justify-between">
-                <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
+           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg w-full sm:w-auto">
                     {filterOptions.map(option => (
                         <button
                             key={option}
-                            onClick={() => setTypeFilter(option)}
-                            className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors ${
-                                // PERBAIKAN: Nama variabel sekarang cocok (typeFilter)
+                            onClick={() => 
+                                handleFilterChange(option)}
+                            className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors w-full ${
                                 typeFilter === option
                                 ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-white shadow-sm'
                                 : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -69,9 +114,7 @@ export default function ReportPage() {
                         </button>
                     ))}
                 </div>
-                <p className="text-sm text-gray-500 font-medium">
-                    Menampilkan {reportData.length} hasil
-                </p>
+                <DebouncedSearchInput value={searchTerm} onChange={setSearchTerm} />
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
@@ -114,6 +157,32 @@ export default function ReportPage() {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                )}
+
+                {totalPages > 1 && (
+                    <div className="p-4 border-t dark:border-gray-700 flex justify-between items-center">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                            Halaman {currentPage} dari {totalPages}
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => p - 1)}
+                                disabled={currentPage === 1 || loading}
+                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                            >
+                                <ChevronLeft className="h-4 w-4 mr-1" />
+                                Sebelumnya
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(p => p + 1)}
+                                disabled={currentPage === totalPages || loading}
+                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                            >
+                                Berikutnya
+                                <ChevronRight className="h-4 w-4 ml-1" />
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
