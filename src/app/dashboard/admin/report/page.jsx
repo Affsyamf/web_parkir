@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { Loader2, ServerCrash, Printer, Search, ChevronLeft, ChevronRight, FileText, Download, Calendar, MapPin, User, Clock } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -21,7 +23,7 @@ const DebouncedSearchInput = ({ value, onChange, delay = 500 }) => {
         return () => {
             clearTimeout(handler);
         };
-    }, [inputValue, delay, onChange]);
+    }, [inputValue, delay, onChange, value]);
 
     return (
         <div className="relative w-full sm:w-80">
@@ -58,16 +60,18 @@ export default function ReportPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
+    const [startDate, setStartDate] = useState(new Date(new Date().setMonth(new Date().getMonth() - 1)));
+    const [endDate, setEndDate] = useState(new Date());
     const ITEMS_PER_PAGE = 10;
     const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
-    const fetchReport = useCallback(async (filter, search, page) => {
+    const fetchReport = useCallback(async (filter, search, page, start, end) => {
         setLoading(true);
         try {
-            const response = await fetch(`/api/report?type=${filter}&search=${search}&page=${page}`);
-            if (!response.ok) {
-                throw new Error('Gagal memuat data laporan');
-            }
+            const startDateISO = start.toISOString();
+            const endDateISO = end.toISOString();
+            const response = await fetch(`/api/report?type=${filter}&search=${search}&page=${page}&startDate=${startDateISO}&endDate=${endDateISO}`);
+            if (!response.ok) throw new Error('Gagal memuat data laporan');
             const data = await response.json();
             setReportData(data.reportData || []);
             setTotalCount(data.totalCount || 0);
@@ -79,8 +83,8 @@ export default function ReportPage() {
     }, []);
 
     useEffect(() => {
-        fetchReport(typeFilter, searchTerm, currentPage);
-    }, [typeFilter, searchTerm, currentPage, fetchReport]);
+        fetchReport(typeFilter, searchTerm, currentPage, startDate, endDate);
+    }, [typeFilter, searchTerm, currentPage, startDate, endDate, fetchReport]);
 
     const filterOptions = [
         { value: 'ALL', label: 'Semua Lokasi', icon: FileText },
@@ -123,7 +127,7 @@ export default function ReportPage() {
                         </div>
                         <div className="flex gap-3">
                             <Link 
-                                href={`/report/print?type=${typeFilter}&search=${searchTerm}`}
+                                href={`/report/print?type=${typeFilter}&search=${searchTerm}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
@@ -194,6 +198,19 @@ export default function ReportPage() {
                         <div className="flex-shrink-0">
                             <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Pencarian</p>
                             <DebouncedSearchInput value={searchTerm} onChange={handleSearchChange} />
+                        </div>
+                    </div>
+                    {/* datepciker */}
+                    <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 mt-4 border-t dark:border-gray-700">
+                        <div className="relative w-full">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tanggal Mulai</label>
+                            <Calendar className="absolute left-3 top-10 z-10 w-5 h-5 text-gray-400"/>
+                            <DatePicker selected={startDate} onChange={(date) => { setStartDate(date); setCurrentPage(1); }} dateFormat="dd/MM/yyyy" className="w-full pl-10 pr-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"/>
+                        </div>
+                         <div className="relative w-full">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tanggal Akhir</label>
+                            <Calendar className="absolute left-3 top-10 z-10 w-5 h-5 text-gray-400"/>
+                            <DatePicker selected={endDate} onChange={(date) => { setEndDate(date); setCurrentPage(1); }} dateFormat="dd/MM/yyyy" minDate={startDate} className="w-full pl-10 pr-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"/>
                         </div>
                     </div>
                 </div>

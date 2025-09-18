@@ -13,10 +13,25 @@ function PrintReportContent() {
     useEffect(() => {
         const type = searchParams.get('type') || 'ALL';
         const search = searchParams.get('search') || '';
+        const startDate = searchParams.get('startDate');
+        const endDate = searchParams.get('endDate');
 
         const fetchAllData = async () => {
             try {
-                const response = await fetch(`/api/report?type=${type}&search=${search}&forPrint=true`);
+                const params = new URLSearchParams({
+                    type,
+                    search,
+                    forPrint: 'true'
+                });
+
+                if (startDate) {
+                    params.append('startDate', startDate);
+                }
+                if (endDate) {
+                    params.append('endDate', endDate);
+                }
+
+                const response = await fetch(`/api/report?${params.toString()}`);
                 if (!response.ok) throw new Error('Gagal memuat data laporan');
                 const data = await response.json();
                 setReportData(data.reportData || []);
@@ -172,6 +187,16 @@ function PrintReportContent() {
                             )}
                             <div className="flex items-center gap-3">
                                 <Calendar className="w-4 h-4 text-gray-500" />
+                                <span className="text-gray-600">Periode:</span>
+                                <span className="font-semibold text-gray-800">
+                                    {(searchParams.get('startDate') && searchParams.get('endDate')) 
+                                        ? `${new Date(searchParams.get('startDate')).toLocaleDateString('id-ID')} - ${new Date(searchParams.get('endDate')).toLocaleDateString('id-ID')}`
+                                        : 'Semua tanggal'
+                                    }
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <FileText className="w-4 h-4 text-gray-500" />
                                 <span className="text-gray-600">Total Data:</span>
                                 <span className="font-semibold text-gray-800">{reportData.length} booking</span>
                             </div>
@@ -215,6 +240,10 @@ function PrintReportContent() {
                             {searchParams.get('search') && (
                                 <p><strong>Pencarian:</strong> "{searchParams.get('search')}"</p>
                             )}
+                            <p><strong>Periode:</strong> {(searchParams.get('startDate') && searchParams.get('endDate')) 
+                                ? `${new Date(searchParams.get('startDate')).toLocaleDateString('id-ID')} - ${new Date(searchParams.get('endDate')).toLocaleDateString('id-ID')}`
+                                : 'Semua tanggal'
+                            }</p>
                             <p><strong>Total Data:</strong> {reportData.length} booking</p>
                         </div>
                         <div className="space-y-1 text-right">
@@ -404,7 +433,7 @@ function PrintReportContent() {
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                             <div className="flex items-center gap-1">
                                 <Phone className="w-4 h-4" />
-                                <span>+6289517644630</span>
+                                <span>+62 xxx-xxxx-xxxx</span>
                             </div>
                             <div className="flex items-center gap-1">
                                 <Mail className="w-4 h-4" />
@@ -429,8 +458,10 @@ export default function PrintReportPage() {
                 <div className="bg-white p-8 rounded-2xl shadow-xl">
                     <div className="relative mb-4">
                         <Loader2 className="w-16 h-16 animate-spin text-indigo-500 mx-auto" />
+                        <div className="absolute inset-0 w-16 h-16 rounded-full border-2 border-indigo-200 mx-auto"></div>
                     </div>
                     <p className="text-xl font-semibold text-gray-800 text-center">Mempersiapkan Laporan</p>
+                    <p className="text-gray-500 text-center mt-2">Sedang mengumpulkan data...</p>
                 </div>
             </div>
         }>

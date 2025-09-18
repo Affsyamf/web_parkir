@@ -15,6 +15,8 @@ export async function GET(request) {
         const search = searchParams.get('search') || '';
         const page = parseInt(searchParams.get('page') || '1', 10);
         const forPrint = searchParams.get('forPrint') === 'true';
+        const startDate = searchParams.get('startDate');
+        const endDate = searchParams.get('endDate');
 
         const limit = 10;
         const offset = (page - 1) * limit;
@@ -23,21 +25,38 @@ export async function GET(request) {
         let queryParams = [];
         let paramIndex = 1;
 
+        // Filter tipe lokasi
         if (type.toUpperCase() !== 'ALL') {
             whereClauses.push(`l.type = $${paramIndex}`);
             queryParams.push(type.toUpperCase());
             paramIndex++;
         }
         
+        // Filter pencarian
         if (search) {
-            whereClauses.push(`(u.name ILIKE $${paramIndex} OR l.name ILIKE $${paramIndex} OR CAST(b.id AS TEXT) ILIKE $${paramIndex})`);
+            whereClauses.push(`(
+                u.name ILIKE $${paramIndex} 
+                OR l.name ILIKE $${paramIndex} 
+                OR CAST(b.id AS TEXT) ILIKE $${paramIndex}
+            )`);
             queryParams.push(`%${search}%`);
             paramIndex++;
         }
 
+        // ✅ Filter tanggal (basis harian, overlap)
+        if (startDate && endDate) {
+            whereClauses.push(`
+                b.entry_time <= $${paramIndex + 1}::date + interval '23 hours 59 minutes 59 seconds'
+                AND b.actual_exit_time >= $${paramIndex}::date
+            `);
+
+            queryParams.push(startDate, endDate);
+            paramIndex += 2;
+        }
+
         const whereCondition = `WHERE ${whereClauses.join(' AND ')}`;
         
-        const dataQuery = `
+        let fullDataQuery = `
             SELECT 
                 b.id, u.name as user_name, l.name as location_name,
                 ps.spot_code, b.entry_time, b.actual_exit_time, b.total_price
@@ -47,21 +66,27 @@ export async function GET(request) {
             JOIN parking_slots ps ON b.spot_id = ps.id
             ${whereCondition}
             ORDER BY b.entry_time DESC
-            ${forPrint ? '' : `LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`};
         `;
         
         const countQuery = `
-            SELECT COUNT(*) FROM bookings b
+            SELECT COUNT(*) 
+            FROM bookings b
             JOIN users u ON b.user_id = u.id
             JOIN locations l ON b.location_id = l.id
             JOIN parking_slots ps ON b.spot_id = ps.id
             ${whereCondition};
         `;
         
-        const queryExecutionParams = forPrint ? queryParams : [...queryParams, limit, offset];
+        let dataQueryParams = [...queryParams];
+
+        // Pagination
+        if (!forPrint) {
+            fullDataQuery += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+            dataQueryParams.push(limit, offset);
+        }
 
         const [dataResult, countResult] = await Promise.all([
-            query(dataQuery, queryExecutionParams),
+            query(fullDataQuery, dataQueryParams),
             query(countQuery, queryParams)
         ]);
         
@@ -69,7 +94,7 @@ export async function GET(request) {
 
         return NextResponse.json({
             reportData: dataResult.rows,
-            totalCount: totalCount
+            totalCount
         }, { status: 200 });
 
     } catch (error) {
@@ -77,4 +102,3 @@ export async function GET(request) {
         return NextResponse.json({ error: 'Gagal mengambil data laporan.' }, { status: 500 });
     }
 }
-
