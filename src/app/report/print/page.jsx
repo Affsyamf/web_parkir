@@ -404,7 +404,7 @@ function PrintReportContent() {
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                             <div className="flex items-center gap-1">
                                 <Phone className="w-4 h-4" />
-                                <span>+62 xxx-xxxx-xxxx</span>
+                                <span>+6289517644630</span>
                             </div>
                             <div className="flex items-center gap-1">
                                 <Mail className="w-4 h-4" />
