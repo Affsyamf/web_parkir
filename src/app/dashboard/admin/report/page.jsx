@@ -201,18 +201,41 @@ export default function ReportPage() {
                         </div>
                     </div>
                     {/* datepciker */}
-                    <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 mt-4 border-t dark:border-gray-700">
-                        <div className="relative w-full">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tanggal Mulai</label>
-                            <Calendar className="absolute left-3 top-10 z-10 w-5 h-5 text-gray-400"/>
-                            <DatePicker selected={startDate} onChange={(date) => { setStartDate(date); setCurrentPage(1); }} dateFormat="dd/MM/yyyy" className="w-full pl-10 pr-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"/>
-                        </div>
-                         <div className="relative w-full">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tanggal Akhir</label>
-                            <Calendar className="absolute left-3 top-10 z-10 w-5 h-5 text-gray-400"/>
-                            <DatePicker selected={endDate} onChange={(date) => { setEndDate(date); setCurrentPage(1); }} dateFormat="dd/MM/yyyy" minDate={startDate} className="w-full pl-10 pr-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"/>
-                        </div>
-                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 mt-4 border-t dark:border-gray-700">
+  <div className="relative w-full">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      Tanggal Mulai
+    </label>
+    <Calendar className="absolute left-3 top-9 z-10 w-5 h-5 text-gray-400" />
+    <DatePicker
+      selected={startDate}
+      onChange={(date) => {
+        setStartDate(date);
+        setCurrentPage(1);
+      }}
+      dateFormat="dd/MM/yyyy"
+      className="w-full pl-10 pr-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"
+    />
+  </div>
+
+  <div className="relative w-full">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      Tanggal Akhir
+    </label>
+    <Calendar className="absolute left-3 top-9 z-10 w-5 h-5 text-gray-400" />
+    <DatePicker
+      selected={endDate}
+      onChange={(date) => {
+        setEndDate(date);
+        setCurrentPage(1);
+      }}
+      dateFormat="dd/MM/yyyy"
+      minDate={startDate}
+      className="w-full pl-10 pr-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md"
+    />
+  </div>
+</div>
+
                 </div>
 
                 {/* Data Table */}
