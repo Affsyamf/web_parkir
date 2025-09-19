@@ -13,11 +13,17 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const searchTerm = searchParams.get('search') || '';
+    const pageParam = searchParams.get('page');
+    const isPaginated = pageParam !== null;
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = 5;
     const offset = (page - 1) * limit;
 
-    const searchTermPattern = `%${searchTerm}%`;
+    let queryParams = [`%${searchTerm}%`];
+
+    if (isPaginated) {
+            queryParams.push(limit, offset);
+        }
 
     // Semua query dijalankan secara paralel untuk efisiensi maksimal
     const [
@@ -27,25 +33,23 @@ export async function GET(request) {
         availableLocationsResult
     ] = await Promise.all([
         // 1. Query utama untuk mengambil data lokasi per halaman
-        query(
-          `SELECT l.id, l.name, l.address, l.type, l.total_slots,
-           l.total_slots - COUNT(p.id) AS available_slots
-           FROM locations l
-           LEFT JOIN parking_slots p ON l.id = p.location_id AND p.status = 'booked'
-           WHERE l.name ILIKE $1 OR l.type ILIKE $1
-           GROUP BY l.id ORDER BY l.name ASC LIMIT $2 OFFSET $3;`,
-          [searchTermPattern, limit, offset]
-        ),
-        // 2. Query untuk menghitung total lokasi (untuk pagination)
-        query("SELECT COUNT(*) FROM locations WHERE name ILIKE $1 OR type ILIKE $1;", [searchTermPattern]),
-        // 3. Query untuk menghitung jumlah SEMUA slot parkir di database
-        query("SELECT SUM(total_slots) as total FROM locations;"),
-        // 4. Query untuk menghitung jumlah lokasi yang masih memiliki slot tersedia
-        query(
-            `SELECT COUNT(DISTINCT l.id) as total FROM locations l
-             JOIN parking_slots ps ON l.id = ps.location_id
-             WHERE ps.status = 'available';`
-        )
+       query(
+                `SELECT l.id, l.name, l.address, l.type, l.total_slots,
+                 l.total_slots - COUNT(p.id) AS available_slots
+                 FROM locations l
+                 LEFT JOIN parking_slots p ON l.id = p.location_id AND p.status = 'booked'
+                 WHERE l.name ILIKE $1 OR l.type ILIKE $1
+                 GROUP BY l.id ORDER BY l.name ASC
+                 ${isPaginated ? 'LIMIT $2 OFFSET $3' : ''};`, // Klausa LIMIT hanya ditambahkan jika perlu
+                queryParams
+            ),
+         query("SELECT COUNT(*) FROM locations WHERE name ILIKE $1 OR type ILIKE $1;", [`%${searchTerm}%`]),
+         query("SELECT SUM(total_slots) as total FROM locations;"),
+         query(
+                `SELECT COUNT(DISTINCT l.id) as total FROM locations l
+                 JOIN parking_slots ps ON l.id = ps.location_id
+                 WHERE ps.status = 'available';`
+            )
     ]);
 
     // --- KOMENTAR: Mengirimkan data statistik baru dalam response JSON ---
