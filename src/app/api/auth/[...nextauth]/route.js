@@ -34,7 +34,8 @@ export const authOptions = {
                 id: user.id, 
                 email: user.email, 
                 name: user.name, 
-                role: user.role // Pastikan role dikirim
+                role: user.role, // Pastikan role dikirim
+                created_at: user.created_at
               };
             }
           }
@@ -52,6 +53,7 @@ export const authOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.created_at = user.created_at;
       }
       return token;
     },
@@ -60,6 +62,7 @@ export const authOptions = {
       if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
+        session.user.created_at = token.created_at;
       }
       return session;
     },
