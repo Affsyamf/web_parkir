@@ -594,9 +594,9 @@ const Footer = () => (
       <div className="pt-8 border-t border-gray-800 dark:border-gray-700 flex flex-col md:flex-row justify-between items-center">
         <p className="text-sm">&copy; {new Date().getFullYear()} Afif Syam Fauzi. All rights reserved.</p>
         <div className="flex space-x-6 mt-4 md:mt-0">
-          <Link href="#" className="text-sm hover:text-white transition-colors">Kebijakan Privasi</Link>
-          <Link href="#" className="text-sm hover:text-white transition-colors">Syarat & Ketentuan</Link>
-          <Link href="#" className="text-sm hover:text-white transition-colors">Cookie Policy</Link>
+          <Link href="/keb.pdf" target='_blank' className="text-sm hover:text-white transition-colors">Kebijakan Privasi</Link>
+          <Link href="/sk.pdf" target='_blank' className="text-sm hover:text-white transition-colors">Syarat & Ketentuan</Link>
+          <Link href="/ck.pdf" target='_blank' className="text-sm hover:text-white transition-colors">Cookie Policy</Link>
         </div>
       </div>
     </div>
