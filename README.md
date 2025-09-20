@@ -14,6 +14,7 @@ Membantu pengguna menemukan, memesan, dan mengelola parkir dengan cepat & mudah.
 - 💳 Pembayaran aman & transparan
 - 📊 Admin dashboard dengan laporan real-time
 - 🌙 Mode Gelap & Terang (dark/light mode)
+- 👁️ Admin Eyecatching
 
 ---
 
