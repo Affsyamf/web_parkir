@@ -25,51 +25,47 @@ export async function GET(request) {
         let queryParams = [];
         let paramIndex = 1;
 
-        // Filter tipe lokasi
         if (type.toUpperCase() !== 'ALL') {
             whereClauses.push(`l.type = $${paramIndex}`);
             queryParams.push(type.toUpperCase());
             paramIndex++;
         }
         
-        // Filter pencarian
         if (search) {
-            whereClauses.push(`(
-                u.name ILIKE $${paramIndex} 
-                OR l.name ILIKE $${paramIndex} 
-                OR CAST(b.id AS TEXT) ILIKE $${paramIndex}
-            )`);
+            whereClauses.push(`(u.name ILIKE $${paramIndex} OR l.name ILIKE $${paramIndex} OR CAST(b.id AS TEXT) ILIKE $${paramIndex})`);
             queryParams.push(`%${search}%`);
             paramIndex++;
         }
 
-        // ✅ Filter tanggal (basis harian, overlap)
         if (startDate && endDate) {
-            whereClauses.push(`
-                b.entry_time <= $${paramIndex + 1}::date + interval '23 hours 59 minutes 59 seconds'
-                AND b.actual_exit_time >= $${paramIndex}::date
-            `);
-
-            queryParams.push(startDate, endDate);
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            start.setHours(0, 0, 0, 0);
+            end.setHours(23, 59, 59, 999);
+            whereClauses.push(`b.entry_time >= $${paramIndex} AND b.entry_time <= $${paramIndex + 1}`);
+            queryParams.push(start, end);
             paramIndex += 2;
         }
 
         const whereCondition = `WHERE ${whereClauses.join(' AND ')}`;
         
-        let fullDataQuery = `
-            SELECT 
-                b.id, u.name as user_name, l.name as location_name,
-                ps.spot_code, b.entry_time, b.actual_exit_time, b.total_price
+        const dataQuery = `
+            SELECT b.id, u.name as user_name, l.name as location_name, ps.spot_code, b.entry_time, b.actual_exit_time, b.total_price
             FROM bookings b
             JOIN users u ON b.user_id = u.id
             JOIN locations l ON b.location_id = l.id
             JOIN parking_slots ps ON b.spot_id = ps.id
-            ${whereCondition}
-            ORDER BY b.entry_time DESC
+            ${whereCondition} ORDER BY b.entry_time DESC
+            ${forPrint ? '' : `LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`};
         `;
         
-        const countQuery = `
-            SELECT COUNT(*) 
+        // --- PERBAIKAN: Query statistik sekarang menggunakan 'whereCondition' yang sama ---
+        const statsQuery = `
+            SELECT 
+                COUNT(*) as total_bookings,
+                SUM(b.total_price) as total_revenue,
+                COUNT(DISTINCT b.user_id) as unique_users,
+                COUNT(DISTINCT b.location_id) as unique_locations
             FROM bookings b
             JOIN users u ON b.user_id = u.id
             JOIN locations l ON b.location_id = l.id
@@ -77,24 +73,22 @@ export async function GET(request) {
             ${whereCondition};
         `;
         
-        let dataQueryParams = [...queryParams];
+        const dataQueryParams = forPrint ? [...queryParams] : [...queryParams, limit, offset];
 
-        // Pagination
-        if (!forPrint) {
-            fullDataQuery += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-            dataQueryParams.push(limit, offset);
-        }
-
-        const [dataResult, countResult] = await Promise.all([
-            query(fullDataQuery, dataQueryParams),
-            query(countQuery, queryParams)
+        const [dataResult, statsResult] = await Promise.all([
+            query(dataQuery, dataQueryParams),
+            query(statsQuery, queryParams)
         ]);
         
-        const totalCount = parseInt(countResult.rows[0].count, 10);
+        const stats = statsResult.rows[0];
 
         return NextResponse.json({
             reportData: dataResult.rows,
-            totalCount
+            totalCount: parseInt(stats.total_bookings, 10) || 0,
+            // --- Mengirimkan data statistik baru ke frontend ---
+            totalRevenue: parseFloat(stats.total_revenue) || 0,
+            uniqueUsers: parseInt(stats.unique_users, 10) || 0,
+            uniqueLocations: parseInt(stats.unique_locations, 10) || 0,
         }, { status: 200 });
 
     } catch (error) {
@@ -102,3 +96,4 @@ export async function GET(request) {
         return NextResponse.json({ error: 'Gagal mengambil data laporan.' }, { status: 500 });
     }
 }
+
