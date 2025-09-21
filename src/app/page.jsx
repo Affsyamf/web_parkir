@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Search, MapPin, ParkingCircle, CheckCircle, Smartphone, ShieldCheck, Zap, Users, Star, Clock, Car, Building2, Plane, Play, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { ThemeToggleButton } from '../components/ThemeToggleButton';
 
 // Enhanced Header with glass morphism
 const Header = () => {
@@ -43,7 +42,7 @@ const Header = () => {
         </motion.div>
         
         <div className="flex items-center gap-6">
-          <ThemeToggleButton />
+          
           <motion.div whileHover={{ scale: 1.05 }}>
             <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors">
               Login
