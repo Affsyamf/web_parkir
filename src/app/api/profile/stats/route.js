@@ -12,21 +12,16 @@ export async function GET(request) {
     try {
         const userId = session.user.id;
 
-        // --- PERBAIKAN UTAMA DI SINI ---
-        // Menjalankan semua query agregat yang dibutuhkan dalam satu panggilan Promise.all
+        // --- PERBAIKAN: Menjalankan semua query statistik yang dibutuhkan ---
         const [
             totalBookingsResult,
             totalSpentResult,
             activeBookingsResult,
             lastBookingResult
         ] = await Promise.all([
-            // 1. Menghitung total semua booking (aktif, selesai, dll.)
             query("SELECT COUNT(*) as total FROM bookings WHERE user_id = $1", [userId]),
-            // 2. Menghitung total pengeluaran dari booking yang 'completed'
             query("SELECT SUM(total_price) as total FROM bookings WHERE user_id = $1 AND status = 'completed'", [userId]),
-            // 3. (BARU) Menghitung jumlah booking yang statusnya 'active'
             query("SELECT COUNT(*) as total FROM bookings WHERE user_id = $1 AND status = 'active'", [userId]),
-            // 4. (BARU) Mengambil tanggal booking terakhir (entry_time terbaru)
             query("SELECT entry_time FROM bookings WHERE user_id = $1 ORDER BY entry_time DESC LIMIT 1", [userId])
         ]);
 
@@ -44,3 +39,4 @@ export async function GET(request) {
         return NextResponse.json({ error: 'Gagal mengambil data statistik.' }, { status: 500 });
     }
 }
+

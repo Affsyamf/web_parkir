@@ -5,12 +5,13 @@ import { useState, useEffect } from 'react';
 import { 
     Loader2, User, KeyRound, Save, CheckCircle, BarChartHorizontalBig, 
     DollarSign, Shield, Calendar, Eye, EyeOff, AlertTriangle, Activity,
-    CreditCard, Clock, TrendingUp, MapPin, Car
+    Clock, TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 const StatCard = ({ title, value, icon: Icon, color = "blue", trend }) => {
+    // PERBAIKAN: Mendefinisikan kelas Tailwind secara penuh untuk menghindari purging saat build
     const colorClasses = {
         blue: "from-blue-500 to-blue-600 shadow-blue-500/25",
         green: "from-green-500 to-green-600 shadow-green-500/25",
@@ -156,13 +157,7 @@ export default function ProfilePage() {
     });
     const [isLoadingStats, setIsLoadingStats] = useState(true);
 
-    // Password validation
-    const passwordRequirements = {
-        minLength: newPassword.length >= 6,
-        hasLetter: /[a-zA-Z]/.test(newPassword),
-        hasNumber: /\d/.test(newPassword)
-    };
-    const isPasswordValid = Object.values(passwordRequirements).every(Boolean);
+    const isPasswordValid = newPassword.length >= 6 && /[a-zA-Z]/.test(newPassword) && /\d/.test(newPassword);
 
     useEffect(() => {
         if (session?.user?.name) {
@@ -174,10 +169,7 @@ export default function ProfilePage() {
             try {
                 const response = await fetch('/api/profile/stats');
                 if (!response.ok) {
-                    if (response.status !== 404) { // Don't show error for missing stats API
-                        toast.error("Gagal memuat statistik booking.");
-                    }
-                    return;
+                    throw new Error("Gagal memuat statistik.");
                 }
                 const data = await response.json();
                 
@@ -189,7 +181,6 @@ export default function ProfilePage() {
                 });
             } catch (err) {
                 console.error("Error fetching user stats:", err);
-                // Don't show error toast for stats as it's not critical
             } finally {
                 setIsLoadingStats(false);
             }
@@ -233,7 +224,6 @@ export default function ProfilePage() {
     const handlePasswordUpdate = async (e) => {
         e.preventDefault();
         
-        // Validation
         if (!currentPassword) {
             toast.error('Password saat ini diperlukan.');
             return;
@@ -288,7 +278,6 @@ export default function ProfilePage() {
 
     return (
         <div className="space-y-8 min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-            {/* Header */}
             <motion.div 
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -297,22 +286,15 @@ export default function ProfilePage() {
                 <div className="absolute inset-0 bg-black/10"></div>
                 <div className="relative z-10 flex items-center justify-between">
                     <div>
-                        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
-                            Profil Pengguna
-                        </h1>
-                        <p className="text-blue-100 text-lg">
-                            Kelola informasi akun dan lihat aktivitas Anda
-                        </p>
+                        <h1 className="text-4xl font-bold mb-2">Profil Pengguna</h1>
+                        <p className="text-blue-100 text-lg">Kelola informasi akun dan lihat aktivitas Anda</p>
                     </div>
                     <div className="bg-white/20 p-4 rounded-full backdrop-blur-sm">
                         <User className="w-12 h-12" />
                     </div>
                 </div>
-                <div className="absolute -right-20 -top-20 w-40 h-40 bg-white/10 rounded-full"></div>
-                <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-white/5 rounded-full"></div>
             </motion.div>
 
-            {/* User Info Card */}
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -324,9 +306,7 @@ export default function ProfilePage() {
                             <User className="w-8 h-8 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                                {session?.user?.name || 'Loading...'}
-                            </h2>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{session?.user?.name}</h2>
                             <p className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
                                 <Shield className="w-4 h-4" />
                                 {session?.user?.email}
@@ -337,172 +317,52 @@ export default function ProfilePage() {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Bergabung sejak</p>
                         <p className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
-                            {session?.user?.created_at ? new Date(session.user.created_at).toLocaleDateString('id-ID') : 'Tidak diketahui'}
+                            {session?.user?.created_at ? new Date(session.user.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'}) : 'Tidak diketahui'}
                         </p>
                     </div>
                 </div>
             </motion.div>
 
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard 
-                    title="Total Booking" 
-                    value={isLoadingStats ? '...' : userStats.totalBookings} 
-                    icon={BarChartHorizontalBig} 
-                    color="blue"
-                    trend={userStats.totalBookings > 0 ? `${userStats.activeBookings} aktif` : null}
-                />
-                <StatCard 
-                    title="Total Pengeluaran" 
-                    value={isLoadingStats ? '...' : `Rp ${userStats.totalSpent.toLocaleString('id-ID')}`} 
-                    icon={DollarSign} 
-                    color="green"
-                />
-                <StatCard 
-                    title="Booking Aktif" 
-                    value={isLoadingStats ? '...' : userStats.activeBookings} 
-                    icon={Activity} 
-                    color="purple"
-                />
-                <StatCard 
-                    title="Terakhir Booking" 
-                    value={isLoadingStats ? '...' : (userStats.lastBookingDate ? new Date(userStats.lastBookingDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : 'Belum ada')} 
-                    icon={Clock} 
-                    color="orange"
-                />
+                <StatCard title="Total Booking" value={isLoadingStats ? '...' : userStats.totalBookings} icon={BarChartHorizontalBig} color="blue" trend={userStats.totalBookings > 0 ? `${userStats.activeBookings} aktif` : null}/>
+                <StatCard title="Total Pengeluaran" value={isLoadingStats ? '...' : `Rp ${userStats.totalSpent.toLocaleString('id-ID')}`} icon={DollarSign} color="green" />
+                <StatCard title="Booking Aktif" value={isLoadingStats ? '...' : userStats.activeBookings} icon={Activity} color="purple" />
+                <StatCard title="Terakhir Booking" value={isLoadingStats ? '...' : (userStats.lastBookingDate ? new Date(userStats.lastBookingDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : 'Belum ada')} icon={Clock} color="orange" />
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Form Update Name */}
                 <FormSection title="Informasi Akun" icon={User}>
                     <form onSubmit={handleNameUpdate} className="space-y-6">
-                        <InputField
-                            label="Alamat Email"
-                            type="email"
-                            value={session?.user?.email || ''}
-                            disabled={true}
-                            icon={Shield}
-                        />
-                        
-                        <InputField
-                            label="Nama Lengkap"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            required={true}
-                            icon={User}
-                        />
-                        
-                        <motion.button
-                            type="submit"
-                            disabled={isUpdatingName || name.trim().length < 2}
-                            className="w-full flex justify-center items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:from-blue-400 disabled:to-purple-400 transition-all shadow-lg hover:shadow-xl"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            {isUpdatingName ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <Save className="w-5 h-5" />
-                            )}
+                        <InputField label="Alamat Email" type="email" value={session?.user?.email || ''} disabled icon={Shield} />
+                        <InputField label="Nama Lengkap" value={name} onChange={(e) => setName(e.target.value)} required icon={User} />
+                        <motion.button type="submit" disabled={isUpdatingName || name.trim().length < 2} className="w-full flex justify-center items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold rounded-xl" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                            {isUpdatingName ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                             {isUpdatingName ? 'Menyimpan...' : 'Simpan Perubahan'}
                         </motion.button>
                     </form>
                 </FormSection>
 
-                {/* Form Update Password */}
                 <FormSection title="Keamanan Akun" icon={KeyRound}>
                     <form onSubmit={handlePasswordUpdate} className="space-y-6">
-                        <InputField
-                            label="Password Saat Ini"
-                            value={currentPassword}
-                            onChange={(e) => setCurrentPassword(e.target.value)}
-                            required={true}
-                            icon={KeyRound}
-                            showToggle={true}
-                            showPassword={showCurrentPassword}
-                            onToggle={() => setShowCurrentPassword(!showCurrentPassword)}
-                        />
-                        
-                        <InputField
-                            label="Password Baru"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            required={true}
-                            icon={KeyRound}
-                            showToggle={true}
-                            showPassword={showNewPassword}
-                            onToggle={() => setShowNewPassword(!showNewPassword)}
-                        />
-                        
+                        <InputField label="Password Saat Ini" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required icon={KeyRound} showToggle showPassword={showCurrentPassword} onToggle={() => setShowCurrentPassword(!showCurrentPassword)} />
+                        <InputField label="Password Baru" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required icon={KeyRound} showToggle showPassword={showNewPassword} onToggle={() => setShowNewPassword(!showNewPassword)} />
                         <AnimatePresence>
-                            {newPassword && (
-                                <PasswordStrengthIndicator password={newPassword} />
-                            )}
+                            {newPassword && <PasswordStrengthIndicator password={newPassword} />}
                         </AnimatePresence>
-                        
-                        <InputField
-                            label="Konfirmasi Password Baru"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required={true}
-                            icon={CheckCircle}
-                            showToggle={true}
-                            showPassword={showConfirmPassword}
-                            onToggle={() => setShowConfirmPassword(!showConfirmPassword)}
-                        />
-                        
+                        <InputField label="Konfirmasi Password Baru" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required icon={CheckCircle} showToggle showPassword={showConfirmPassword} onToggle={() => setShowConfirmPassword(!showConfirmPassword)} />
                         {newPassword && confirmPassword && newPassword !== confirmPassword && (
-                            <motion.div 
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="flex items-center gap-2 text-red-500 text-sm"
-                            >
-                                <AlertTriangle className="w-4 h-4" />
-                                Password tidak cocok
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 text-red-500 text-sm">
+                                <AlertTriangle className="w-4 h-4" /> Password tidak cocok
                             </motion.div>
                         )}
-                        
-                        <motion.button
-                            type="submit"
-                            disabled={isUpdatingPassword || !isPasswordValid || newPassword !== confirmPassword || !currentPassword}
-                            className="w-full flex justify-center items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-800 text-white font-semibold rounded-xl hover:from-gray-800 hover:to-gray-900 disabled:from-gray-400 disabled:to-gray-500 transition-all shadow-lg hover:shadow-xl"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            {isUpdatingPassword ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <CheckCircle className="w-5 h-5" />
-                            )}
-                            {isUpdatingPassword ? 'Mengubah Password...' : 'Ubah Password'}
+                        <motion.button type="submit" disabled={isUpdatingPassword || !isPasswordValid || newPassword !== confirmPassword || !currentPassword} className="w-full flex justify-center items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-800 text-white font-semibold rounded-xl" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                            {isUpdatingPassword ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
+                            {isUpdatingPassword ? 'Mengubah...' : 'Ubah Password'}
                         </motion.button>
                     </form>
                 </FormSection>
             </div>
-
-            {/* Security Notice */}
-            <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50 rounded-2xl p-6"
-            >
-                <div className="flex items-start gap-4">
-                    <div className="bg-blue-500 p-2 rounded-lg">
-                        <Shield className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-300 mb-2">
-                            Tips Keamanan Akun
-                        </h3>
-                        <ul className="space-y-1 text-blue-800 dark:text-blue-400 text-sm">
-                            <li>• Gunakan password yang kuat dengan kombinasi huruf dan angka</li>
-                            <li>• Jangan bagikan informasi akun Anda kepada orang lain</li>
-                            <li>• Logout dari perangkat umum setelah selesai menggunakan</li>
-                            <li>• Perbarui password secara berkala untuk keamanan optimal</li>
-                        </ul>
-                    </div>
-                </div>
-            </motion.div>
         </div>
     );
 }
+

@@ -92,195 +92,81 @@ export async function GET(request) {
 }
 
 // Handler untuk PUT (Update profil)
-export async function PUT(request) {
+export async function PUT(req) {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const body = await req.json();
+
+  // Validasi input
+  const parsed = profileUpdateSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Validation error', details: parsed.error.errors },
+      { status: 400 }
+    );
+  }
+
+  const { name, currentPassword, newPassword } = parsed.data;
+
   try {
-    // Rate limiting
-    const identifier = request.headers.get('x-forwarded-for') || 'anonymous';
-    await profileLimiter.check(identifier);
+    // Ambil user
+    const userResult = await query(
+      'SELECT * FROM users WHERE email=$1',
+      [session.user.email]
+    );
 
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      logSecurityEvent('UNAUTHORIZED_PROFILE_UPDATE', null);
-      return NextResponse.json({ error: 'Akses ditolak.' }, { status: 401 });
+    if (userResult.rowCount === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const userId = session.user.id;
+    const user = userResult.rows[0];
 
-    // Validasi format user ID
-    if (!/^\d+$/.test(userId.toString())) {
-      logSecurityEvent('INVALID_USER_ID_FORMAT', userId);
-      return NextResponse.json({ error: 'ID pengguna tidak valid.' }, { status: 400 });
-    }
-
-    // Parse dan sanitize input
-    let body;
-    try {
-      body = await request.json();
-    } catch (error) {
-      logSecurityEvent('INVALID_JSON_PROFILE_UPDATE', userId);
-      return NextResponse.json({ error: 'Format data tidak valid.' }, { status: 400 });
-    }
-
-    // Sanitize inputs
-    if (body.name) body.name = sanitizeInput(body.name);
-    if (body.currentPassword) body.currentPassword = sanitizeInput(body.currentPassword);
-    if (body.newPassword) body.newPassword = sanitizeInput(body.newPassword);
-
-    // Validate input dengan Zod
-    let validatedData;
-    try {
-      validatedData = profileUpdateSchema.parse(body);
-    } catch (error) {
-      logSecurityEvent('VALIDATION_FAILED_PROFILE_UPDATE', userId, { 
-        errors: error.errors.map(e => e.message) 
-      });
-      return NextResponse.json({ 
-        error: 'Data tidak valid.', 
-        details: error.errors.map(e => e.message) 
-      }, { status: 400 });
-    }
-
-    const { name, currentPassword, newPassword } = validatedData;
-
-    // Jika mengubah password, validasi password lama
+    // Kalau mau ganti password, cek dulu currentPassword
+    let hashedPassword = null;
     if (newPassword) {
       if (!currentPassword) {
-        logSecurityEvent('PASSWORD_CHANGE_WITHOUT_CURRENT', userId);
-        return NextResponse.json({ 
-          error: 'Password saat ini diperlukan untuk mengubah password.' 
-        }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Password saat ini diperlukan' },
+          { status: 400 }
+        );
       }
 
-      // Ambil password hash dari database
-      const currentUserResult = await query(
-        'SELECT password FROM users WHERE id = $1',
-        [userId]
-      );
-
-      if (currentUserResult.rowCount === 0) {
-        logSecurityEvent('USER_NOT_FOUND_PASSWORD_CHANGE', userId);
-        return NextResponse.json({ error: 'Pengguna tidak ditemukan.' }, { status: 404 });
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return NextResponse.json(
+          { error: 'Password saat ini salah' },
+          { status: 400 }
+        );
       }
 
-      // Verifikasi password lama
-      const isCurrentPasswordValid = await bcrypt.compare(
-        currentPassword, 
-        currentUserResult.rows[0].password
-      );
-
-      if (!isCurrentPasswordValid) {
-        logSecurityEvent('INVALID_CURRENT_PASSWORD', userId);
-        return NextResponse.json({ 
-          error: 'Password saat ini tidak benar.' 
-        }, { status: 400 });
-      }
-
-      // Cek apakah password baru sama dengan password lama
-      const isSamePassword = await bcrypt.compare(
-        newPassword, 
-        currentUserResult.rows[0].password
-      );
-
-      if (isSamePassword) {
-        logSecurityEvent('SAME_PASSWORD_UPDATE_ATTEMPT', userId);
-        return NextResponse.json({ 
-          error: 'Password baru harus berbeda dari password saat ini.' 
-        }, { status: 400 });
-      }
+      hashedPassword = await bcrypt.hash(newPassword, 10);
     }
 
-    // Membangun query secara dinamis
-    let updateQuery = 'UPDATE users SET updated_at = NOW()';
-    const queryParams = [];
-    let paramIndex = 1;
+    // Update hanya name dan password
+    const updateResult = await query(
+      `UPDATE users
+       SET name = COALESCE($1, name),
+           password = COALESCE($2, password)
+       WHERE email = $3
+       RETURNING id, name, email, role, created_at`,
+      [name || null, hashedPassword || null, session.user.email]
+    );
 
-    if (name && name !== session.user.name) {
-      // Cek apakah nama sudah digunakan oleh user lain
-      const nameCheckResult = await query(
-        'SELECT id FROM users WHERE LOWER(name) = LOWER($1) AND id != $2',
-        [name, userId]
-      );
-
-      if (nameCheckResult.rowCount > 0) {
-        logSecurityEvent('DUPLICATE_NAME_UPDATE_ATTEMPT', userId, { attemptedName: name });
-        return NextResponse.json({ 
-          error: 'Nama tersebut sudah digunakan.' 
-        }, { status: 409 });
-      }
-
-      updateQuery += `, name = $${paramIndex}`;
-      queryParams.push(name);
-      paramIndex++;
-    }
-
-    if (newPassword) {
-      // Hash password baru dengan salt yang kuat
-      const saltRounds = 12; // Meningkatkan dari default 10
-      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-      
-      updateQuery += `, password = $${paramIndex}`;
-      queryParams.push(hashedPassword);
-      paramIndex++;
-    }
-
-    // Jika tidak ada data yang diubah
-    if (queryParams.length === 0) {
-      logSecurityEvent('NO_DATA_TO_UPDATE', userId);
-      return NextResponse.json({ 
-        error: 'Tidak ada data untuk diperbarui.' 
-      }, { status: 400 });
-    }
-
-    updateQuery += ` WHERE id = $${paramIndex} RETURNING id, name, email, role, updated_at`;
-    queryParams.push(userId);
-    
-    // Eksekusi update dengan transaction untuk atomicity
-    const result = await query('BEGIN');
-    try {
-      const updateResult = await query(updateQuery, queryParams);
-
-      if (updateResult.rowCount === 0) {
-        await query('ROLLBACK');
-        logSecurityEvent('USER_NOT_FOUND_UPDATE', userId);
-        return NextResponse.json({ error: 'Pengguna tidak ditemukan.' }, { status: 404 });
-      }
-
-      await query('COMMIT');
-
-      logSecurityEvent('PROFILE_UPDATED_SUCCESSFULLY', userId, {
-        updatedFields: {
-          name: !!name,
-          password: !!newPassword
-        }
-      });
-
-      return NextResponse.json({ 
-        user: updateResult.rows[0],
-        message: 'Profil berhasil diperbarui.'
-      }, { status: 200 });
-
-    } catch (error) {
-      await query('ROLLBACK');
-      throw error;
-    }
+    return NextResponse.json(
+      { user: updateResult.rows[0] },
+      { status: 200 }
+    );
 
   } catch (error) {
-    if (error.message === 'Rate limit exceeded') {
-      return NextResponse.json({ 
-        error: 'Terlalu banyak permintaan. Coba lagi nanti.' 
-      }, { status: 429 });
-    }
-
-    console.error('API PUT profile error:', error);
-    logSecurityEvent('PROFILE_UPDATE_ERROR', session?.user?.id || null, { 
-      error: error.message 
-    });
-    
-    return NextResponse.json({ 
-      error: 'Gagal memperbarui profil.' 
-    }, { status: 500 });
+    console.error("PUT /api/profile error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+
 
 // Handler untuk DELETE (Hapus akun - opsional untuk keamanan)
 export async function DELETE(request) {
