@@ -605,7 +605,7 @@ const Footer = () => (
 
 export default function HomePage() {
   return (
-    <div className="bg-white dark:bg-gray-900 overflow-x-hidden">
+    <div className="bg-white dark:bg-gray-900 overflow-x-hidden scrollbar-hidden">
       <Header />
       <main>
         <HeroSection />
