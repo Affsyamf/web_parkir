@@ -25,7 +25,7 @@ const profileUpdateSchema = z.object({
     .optional(),
     
   newPassword: z.string()
-    .min(6, 'Password baru harus minimal 6 karakter')
+    .min(4, 'Password baru harus minimal 4 karakter')
     .max(128, 'Password terlalu panjang')
     .regex(/^(?=.*[a-zA-Z])(?=.*\d)/, 'Password harus mengandung huruf dan angka')
     .optional(),

@@ -94,7 +94,7 @@ const InputField = ({ label, type = "text", value, onChange, disabled = false, r
 
 const PasswordStrengthIndicator = ({ password }) => {
     const requirements = [
-        { label: "Minimal 6 karakter", met: password.length >= 6 },
+        { label: "Minimal 4 karakter", met: password.length >=  4},
         { label: "Mengandung huruf", met: /[a-zA-Z]/.test(password) },
         { label: "Mengandung angka", met: /\d/.test(password) }
     ];
