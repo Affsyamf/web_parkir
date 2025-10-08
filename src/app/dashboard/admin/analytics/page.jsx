@@ -62,6 +62,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 const PieTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         const data = payload[0];
+        const percentage = data.payload.total > 0 ? ((data.value / data.payload.total) * 100).toFixed(1) : 0;
         return (
             <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 backdrop-blur-sm z-50">
                 <div className="flex items-center gap-2 mb-2">
@@ -77,13 +78,14 @@ const PieTooltip = ({ active, payload }) => {
                     Booking: {data.value}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                    Persentase: {((data.value / data.payload.total) * 100).toFixed(1)}%
+                    Persentase: {percentage}%
                 </p>
             </div>
         );
     }
     return null;
 };
+
 
 export default function AnalyticsPage() {
     const [data, setData] = useState(null);
@@ -101,15 +103,17 @@ export default function AnalyticsPage() {
                 }
                 const analyticsData = await response.json();
                 
-                // Calculate total for percentage calculation
-                const totalBookings = analyticsData.bookingsByLocation.reduce((sum, item) => sum + item.Jumlah, 0);
-                const enhancedLocationData = analyticsData.bookingsByLocation.map(item => ({
+                const bookingsByLocation = analyticsData.bookingsByLocation || [];
+                const totalBookings = bookingsByLocation.reduce((sum, item) => sum + item.Jumlah, 0);
+                
+                const enhancedLocationData = bookingsByLocation.map(item => ({
                     ...item,
                     total: totalBookings
                 }));
                 
                 setData({
                     ...analyticsData,
+                    bookingsByDay: analyticsData.bookingsByDay || [],
                     bookingsByLocation: enhancedLocationData
                 });
             } catch (err) {
@@ -121,7 +125,6 @@ export default function AnalyticsPage() {
         fetchAnalyticsData();
     }, []);
 
-    // Enhanced color palette with better contrast
     const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'];
 
     if (loading) {
@@ -140,26 +143,53 @@ export default function AnalyticsPage() {
         return (
             <div className="text-center py-24">
                <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-2xl inline-block mb-6">
-                   <ServerCrash className="mx-auto w-16 h-16 text-red-500 mb-4"/>
+                  <ServerCrash className="mx-auto w-16 h-16 text-red-500 mb-4"/>
                </div>
                <h3 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Gagal Memuat Data</h3>
                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                   {error || "Tidak dapat mengambil data laporan saat ini. Silakan coba lagi dalam beberapa saat."}
+                  {error || "Tidak dapat mengambil data laporan saat ini. Silakan coba lagi dalam beberapa saat."}
                </p>
                <button 
-                   onClick={() => window.location.reload()} 
-                   className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
+                  onClick={() => window.location.reload()} 
+                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
                >
-                   Coba Lagi
+                  Coba Lagi
                </button>
             </div>
         );
     }
     
+    const hasDailyData = data.bookingsByDay && data.bookingsByDay.length > 0;
+    
+    const highestDay = hasDailyData 
+        ? data.bookingsByDay.reduce((prev, current) => (prev.Pendapatan > current.Pendapatan) ? prev : current)
+        : { date: '-', Pendapatan: 0 };
+
+    const lowestDay = hasDailyData
+        ? data.bookingsByDay.reduce((prev, current) => (prev.Pendapatan < current.Pendapatan) ? prev : current)
+        : { date: '-', Pendapatan: 0 };
+
+    const averageDailyRevenue = hasDailyData
+        ? Math.round(data.totalRevenue / data.bookingsByDay.length)
+        : 0;
+
+    const firstDayRevenue = hasDailyData ? data.bookingsByDay[0]?.Pendapatan : 0;
+    const lastDayRevenue = hasDailyData ? data.bookingsByDay[data.bookingsByDay.length - 1]?.Pendapatan : 0;
+    
+    const trendStatus = lastDayRevenue > firstDayRevenue ? "Naik" : lastDayRevenue < firstDayRevenue ? "Turun" : "Stabil";
+    let trendPercentage = '0%';
+    if (firstDayRevenue > 0) {
+        const change = ((lastDayRevenue - firstDayRevenue) / firstDayRevenue * 100).toFixed(1);
+        trendPercentage = `${Math.abs(change)}%`;
+    }
+    const trendSymbol = lastDayRevenue > firstDayRevenue ? '↗' : lastDayRevenue < firstDayRevenue ? '↘' : '→';
+    const trendColorClass = lastDayRevenue > firstDayRevenue ? "text-green-600 dark:text-green-400" 
+        : lastDayRevenue < firstDayRevenue ? "text-red-600 dark:text-red-400" 
+        : "text-amber-700 dark:text-amber-300";
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             <div className="max-w-7xl mx-auto px-6 py-8">
-                {/* Header Section */}
                 <div className="text-center mb-12">
                     <div className="inline-flex items-center gap-3 bg-white dark:bg-gray-800 px-6 py-3 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mb-6">
                         <TrendingUp className="w-6 h-6 text-indigo-600" />
@@ -173,11 +203,10 @@ export default function AnalyticsPage() {
                     </p>
                 </div>
 
-                {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                     <StatCard 
                         title="Total Pendapatan" 
-                        value={`Rp ${Number(data.totalRevenue).toLocaleString('id-ID')}`} 
+                        value={`Rp ${Number(data.totalRevenue || 0).toLocaleString('id-ID')}`} 
                         icon={DollarSign} 
                         trend={15}
                         color="green"
@@ -185,7 +214,7 @@ export default function AnalyticsPage() {
                     />
                     <StatCard 
                         title="Total Booking" 
-                        value={data.totalBookings} 
+                        value={data.totalBookings || 0} 
                         icon={BarChart2} 
                         trend={8}
                         color="blue"
@@ -198,15 +227,13 @@ export default function AnalyticsPage() {
                     />
                     <StatCard 
                         title="Rata-rata per Booking" 
-                        value={`Rp ${Math.round(data.totalRevenue / data.totalBookings).toLocaleString('id-ID')}`} 
+                        value={data.totalBookings > 0 ? `Rp ${Math.round(data.totalRevenue / data.totalBookings).toLocaleString('id-ID')}` : 'Rp 0'} 
                         icon={Users} 
                         color="orange"
                     />
                 </div>
 
-                {/* Charts Section */}
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-12">
-                    {/* Revenue Area Chart */}
                     <div className="xl:col-span-2 bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700">
                         <div className="flex items-center justify-between mb-8">
                             <div>
@@ -259,14 +286,12 @@ export default function AnalyticsPage() {
                             </AreaChart>
                         </ResponsiveContainer>
                         
-                        {/* Enhanced Statistics Cards Below Chart */}
                         <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                             <div className="mb-4">
                                 <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">Ringkasan Performa</h4>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Analisis mendalam data 7 hari terakhir</p>
                             </div>
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                {/* Highest Day Card */}
                                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-5 rounded-2xl border border-green-200 dark:border-green-800/50 hover:shadow-lg transition-all duration-300 group">
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className="bg-green-100 dark:bg-green-900/50 p-2 rounded-lg group-hover:scale-110 transition-transform">
@@ -275,26 +300,18 @@ export default function AnalyticsPage() {
                                         <div>
                                             <p className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">Peak Day</p>
                                             <p className="text-sm font-bold text-green-800 dark:text-green-300">
-                                                {(() => {
-                                                    const highest = data.bookingsByDay.reduce((prev, current) => 
-                                                        (prev.Pendapatan > current.Pendapatan) ? prev : current
-                                                    );
-                                                    return highest.date;
-                                                })()}
+                                                {highestDay.date}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-xl font-bold text-green-700 dark:text-green-300">
-                                            Rp {data.bookingsByDay.reduce((prev, current) => 
-                                                (prev.Pendapatan > current.Pendapatan) ? prev : current
-                                            ).Pendapatan.toLocaleString('id-ID')}
+                                            Rp {highestDay.Pendapatan.toLocaleString('id-ID')}
                                         </p>
                                         <p className="text-xs text-green-600 dark:text-green-400">Pendapatan tertinggi</p>
                                     </div>
                                 </div>
 
-                                {/* Lowest Day Card */}
                                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-5 rounded-2xl border border-blue-200 dark:border-blue-800/50 hover:shadow-lg transition-all duration-300 group">
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className="bg-blue-100 dark:bg-blue-900/50 p-2 rounded-lg group-hover:scale-110 transition-transform">
@@ -303,26 +320,18 @@ export default function AnalyticsPage() {
                                         <div>
                                             <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Low Day</p>
                                             <p className="text-sm font-bold text-blue-800 dark:text-blue-300">
-                                                {(() => {
-                                                    const lowest = data.bookingsByDay.reduce((prev, current) => 
-                                                        (prev.Pendapatan < current.Pendapatan) ? prev : current
-                                                    );
-                                                    return lowest.date;
-                                                })()}
+                                                {lowestDay.date}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-xl font-bold text-blue-700 dark:text-blue-300">
-                                            Rp {data.bookingsByDay.reduce((prev, current) => 
-                                                (prev.Pendapatan < current.Pendapatan) ? prev : current
-                                            ).Pendapatan.toLocaleString('id-ID')}
+                                            Rp {lowestDay.Pendapatan.toLocaleString('id-ID')}
                                         </p>
                                         <p className="text-xs text-blue-600 dark:text-blue-400">Pendapatan terendah</p>
                                     </div>
                                 </div>
 
-                                {/* Average Card */}
                                 <div className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 p-5 rounded-2xl border border-purple-200 dark:border-purple-800/50 hover:shadow-lg transition-all duration-300 group">
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className="bg-purple-100 dark:bg-purple-900/50 p-2 rounded-lg group-hover:scale-110 transition-transform">
@@ -335,13 +344,12 @@ export default function AnalyticsPage() {
                                     </div>
                                     <div className="text-right">
                                         <p className="text-xl font-bold text-purple-700 dark:text-purple-300">
-                                            Rp {Math.round(data.totalRevenue / data.bookingsByDay.length).toLocaleString('id-ID')}
+                                            Rp {averageDailyRevenue.toLocaleString('id-ID')}
                                         </p>
                                         <p className="text-xs text-purple-600 dark:text-purple-400">Rata-rata harian</p>
                                     </div>
                                 </div>
 
-                                {/* Trend Card */}
                                 <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-5 rounded-2xl border border-amber-200 dark:border-amber-800/50 hover:shadow-lg transition-all duration-300 group">
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className="bg-amber-100 dark:bg-amber-900/50 p-2 rounded-lg group-hover:scale-110 transition-transform">
@@ -350,30 +358,13 @@ export default function AnalyticsPage() {
                                         <div>
                                             <p className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wide">Trend</p>
                                             <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
-                                                {(() => {
-                                                    const firstDay = data.bookingsByDay[0]?.Pendapatan || 0;
-                                                    const lastDay = data.bookingsByDay[data.bookingsByDay.length - 1]?.Pendapatan || 0;
-                                                    return lastDay > firstDay ? "Naik" : lastDay < firstDay ? "Turun" : "Stabil";
-                                                })()}
+                                                {trendStatus}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className={`text-xl font-bold ${(() => {
-                                            const firstDay = data.bookingsByDay[0]?.Pendapatan || 0;
-                                            const lastDay = data.bookingsByDay[data.bookingsByDay.length - 1]?.Pendapatan || 0;
-                                            if (lastDay > firstDay) return "text-green-600 dark:text-green-400";
-                                            if (lastDay < firstDay) return "text-red-600 dark:text-red-400";
-                                            return "text-amber-700 dark:text-amber-300";
-                                        })()}`}>
-                                            {(() => {
-                                                const firstDay = data.bookingsByDay[0]?.Pendapatan || 0;
-                                                const lastDay = data.bookingsByDay[data.bookingsByDay.length - 1]?.Pendapatan || 0;
-                                                const trend = lastDay > firstDay ? '↗' : lastDay < firstDay ? '↘' : '→';
-                                                if (firstDay === 0) return `${trend} 0%`;
-                                                const change = ((lastDay - firstDay) / firstDay * 100).toFixed(1);
-                                                return `${trend} ${Math.abs(change)}%`;
-                                            })()}
+                                        <p className={`text-xl font-bold ${trendColorClass}`}>
+                                            {trendSymbol} {trendPercentage}
                                         </p>
                                         <p className="text-xs text-amber-600 dark:text-amber-400">Perubahan minggu ini</p>
                                     </div>
@@ -382,7 +373,6 @@ export default function AnalyticsPage() {
                         </div>
                     </div>
 
-                    {/* Location Pie Chart */}
                     <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700">
                         <div className="mb-8">
                             <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Distribusi Lokasi</h3>
@@ -404,7 +394,7 @@ export default function AnalyticsPage() {
                                         animationBegin={500}
                                         animationDuration={1500}
                                     >
-                                        {data.bookingsByLocation.map((entry, index) => (
+                                        {(data.bookingsByLocation || []).map((entry, index) => (
                                             <Cell 
                                                 key={`cell-${index}`} 
                                                 fill={COLORS[index % COLORS.length]}
@@ -418,9 +408,8 @@ export default function AnalyticsPage() {
                             </ResponsiveContainer>
                         </div>
                         
-                        {/* Enhanced Legend */}
                         <div className="space-y-3">
-                            {data.bookingsByLocation.slice(0, 4).map((location, index) => (
+                            {(data.bookingsByLocation || []).slice(0, 4).map((location, index) => (
                                 <div key={index} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
                                     <div className="flex items-center gap-3">
                                         <div 
@@ -436,12 +425,12 @@ export default function AnalyticsPage() {
                                             {location.Jumlah}
                                         </div>
                                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                                            {((location.Jumlah / location.total) * 100).toFixed(1)}%
+                                            {location.total > 0 ? ((location.Jumlah / location.total) * 100).toFixed(1) : 0}%
                                         </div>
                                     </div>
                                 </div>
                             ))}
-                            {data.bookingsByLocation.length > 4 && (
+                            {(data.bookingsByLocation || []).length > 4 && (
                                 <div className="text-center text-sm text-gray-500 dark:text-gray-400 pt-2">
                                     +{data.bookingsByLocation.length - 4} lokasi lainnya
                                 </div>
@@ -450,7 +439,6 @@ export default function AnalyticsPage() {
                     </div>
                 </div>
 
-                {/* Insights Section */}
                 <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700">
                     <div className="text-center mb-8">
                         <h3 className="text-3xl font-bold text-gray-800 dark:text-white mb-3">
@@ -470,8 +458,14 @@ export default function AnalyticsPage() {
                                 <h4 className="text-lg font-bold text-gray-800 dark:text-white">Performa Terbaik</h4>
                             </div>
                             <p className="text-gray-700 dark:text-gray-300">
-                                <span className="font-semibold">{data.bookingsByLocation[0]?.name}</span> memimpin dengan{' '}
-                                <span className="font-bold text-indigo-600 dark:text-indigo-400">{data.bookingsByLocation[0]?.Jumlah} booking</span>
+                                {data.bookingsByLocation && data.bookingsByLocation.length > 0 ? (
+                                    <>
+                                        <span className="font-semibold">{data.bookingsByLocation[0].name}</span> memimpin dengan{' '}
+                                        <span className="font-bold text-indigo-600 dark:text-indigo-400">{data.bookingsByLocation[0].Jumlah} booking</span>
+                                    </>
+                                ) : (
+                                    "Belum ada data lokasi."
+                                )}
                             </p>
                         </div>
                         
@@ -483,7 +477,7 @@ export default function AnalyticsPage() {
                                 <h4 className="text-lg font-bold text-gray-800 dark:text-white">Pendapatan Harian</h4>
                             </div>
                             <p className="text-gray-700 dark:text-gray-300">
-                                Rata-rata <span className="font-bold text-indigo-600 dark:text-indigo-400">Rp {Math.round(data.totalRevenue / 7).toLocaleString('id-ID')}</span> per hari
+                                Rata-rata <span className="font-bold text-indigo-600 dark:text-indigo-400">Rp {averageDailyRevenue.toLocaleString('id-ID')}</span> per hari
                             </p>
                         </div>
                         
@@ -495,7 +489,7 @@ export default function AnalyticsPage() {
                                 <h4 className="text-lg font-bold text-gray-800 dark:text-white">Tingkat Okupansi</h4>
                             </div>
                             <p className="text-gray-700 dark:text-gray-300">
-                                <span className="font-bold text-indigo-600 dark:text-indigo-400">{data.activeBookingsCount}</span> booking sedang aktif saat ini
+                                <span className="font-bold text-indigo-600 dark:text-indigo-400">{data.activeBookingsCount || 0}</span> booking sedang aktif saat ini
                             </p>
                         </div>
                     </div>
@@ -504,3 +498,4 @@ export default function AnalyticsPage() {
         </div>
     );
 }
+
